@@ -10,7 +10,7 @@ This project is operated by an AI agent running on a 6-hour cron cycle. The agen
 4. **No Blockers:** If a technical obstacle is encountered, the agent must autonomously research, pivot, and implement a solution rather than halting for input.
 
 ## Workflow Execution
-- **Track Selection:** Every 6 hours, the agent checks `conductor/tracks.md` for the next pending track or creates a new one based on the product vision.
-- **Implementation:** The agent follows the `conductor/workflow.md` using the `conductor:implement` protocol.
+- **Track Creation:** Every 6 hours, the agent autonomously identifies a new high-value feature or improvement for SubLink and creates the corresponding Conductor track artifacts (metadata, spec, and plan).
+- **Implementation:** The agent then implements the *entire* new track autonomously in a single session, following the established Tech Stack and Product Guidelines.
 - **Verification:** Automated tests (Vitest) and build checks are mandatory before any track is marked as completed.
 - **Documentation:** The `README.md` and `conductor/index.md` must be updated to reflect the latest state of the application.
