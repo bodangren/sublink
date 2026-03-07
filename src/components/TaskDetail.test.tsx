@@ -14,6 +14,12 @@ vi.mock('../utils/watermark', () => ({
   applyWatermark: vi.fn((data: string) => Promise.resolve(data)),
 }))
 
+vi.mock('../utils/pdfGenerator', () => ({
+  generateTaskPDF: vi.fn(() => Promise.resolve(new Blob())),
+  downloadPDF: vi.fn(),
+  generatePDFFilename: vi.fn(() => 'test.pdf'),
+}))
+
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom')
@@ -145,5 +151,17 @@ describe('TaskDetail', () => {
     fireEvent.click(backButton)
     
     expect(mockNavigate).toHaveBeenCalledWith('/tasking')
+  })
+
+  it('shows export PDF button', async () => {
+    const taskId = await saveTask({
+      title: 'Test Task',
+      description: 'Test description',
+    })
+    renderWithRouter(<TaskDetail taskId={taskId} />)
+    
+    await waitFor(() => {
+      expect(screen.getByText('Export PDF Report')).toBeDefined()
+    })
   })
 })

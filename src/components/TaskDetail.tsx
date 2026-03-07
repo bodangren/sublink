@@ -3,6 +3,7 @@ import { useNavigate, NavLink } from 'react-router-dom'
 import { getTask, getPhotosByTask, getPhotoCountByTask, savePhoto, deleteTask } from '../db'
 import { getGPSLocation, createWatermarkText } from '../utils/gps'
 import { applyWatermark } from '../utils/watermark'
+import { generateTaskPDF, downloadPDF, generatePDFFilename } from '../utils/pdfGenerator'
 import PhotoGallery from './PhotoGallery'
 import type { Task, TaskPhoto } from '../db'
 
@@ -16,6 +17,7 @@ const TaskDetail = ({ taskId }: TaskDetailProps) => {
   const [photos, setPhotos] = useState<TaskPhoto[]>([])
   const [photoCount, setPhotoCount] = useState(0)
   const [isCapturing, setIsCapturing] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -109,6 +111,22 @@ const TaskDetail = ({ taskId }: TaskDetailProps) => {
     }
   }
 
+  const handleExportPDF = async () => {
+    if (!task) return
+    
+    setIsExporting(true)
+    try {
+      const blob = await generateTaskPDF({ task, photos })
+      const filename = generatePDFFilename(task)
+      downloadPDF(blob, filename)
+    } catch (err) {
+      console.error('Failed to generate PDF:', err)
+      setError('Failed to generate PDF. Please try again.')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="container">
@@ -196,6 +214,19 @@ const TaskDetail = ({ taskId }: TaskDetailProps) => {
           {isCapturing ? 'Processing...' : 'Take Photo'}
         </span>
       </label>
+
+      <button 
+        onClick={handleExportPDF}
+        disabled={isExporting}
+        style={{ 
+          marginTop: '0.5rem',
+          backgroundColor: isExporting ? '#666' : '#2196F3',
+          color: '#fff',
+          opacity: isExporting ? 0.7 : 1
+        }}
+      >
+        {isExporting ? 'Generating PDF...' : 'Export PDF Report'}
+      </button>
 
       <div style={{ marginTop: '2rem' }}>
         <h3>Photos</h3>
