@@ -5,10 +5,10 @@
 SubLink is a local-first mobile Progressive Web App (PWA) designed for subcontractors in the construction industry. It streamlines compliance, proof-of-work, and financial documentation directly from the job site.
 
 ### Key Features
-- **Instant Lien Waivers:** Generate signed PDF lien waivers on-site.
-- **Compliance Tracking:** Manage Certificates of Insurance (COIs) with automated alerts.
-- **Photo-Verified Tasking:** Geospatial/Timestamped photo evidence for proof of work.
-- **Offline-First:** Fully functional without an internet connection.
+- **Instant Lien Waivers:** Generate signed PDF lien waivers on-site. Capture signatures directly on your screen and export as standardized PDFs.
+- **Compliance Tracking:** Manage Certificates of Insurance (COIs) with automated alerts (Coming Soon).
+- **Photo-Verified Tasking:** Geospatial/Timestamped photo evidence for proof of work (Coming Soon).
+- **Offline-First:** Fully functional without an internet connection using IndexedDB for local storage.
 
 ### Tech Stack
 - **Frontend:** React 19, TypeScript, Vite.

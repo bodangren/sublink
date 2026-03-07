@@ -1,0 +1,119 @@
+:root {
+  --bg-color: #000000;
+  --text-color: #ffffff;
+  --accent-color: #ffd700; /* Gold/High-Visibility Yellow */
+  --secondary-bg: #1a1a1a;
+  --input-bg: #2a2a2a;
+  --border-color: #444444;
+  --error-color: #ff4444;
+  --success-color: #00ff00;
+  --font-family: system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: var(--font-family);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3 {
+  margin: 0;
+  padding: 1rem;
+  color: var(--accent-color);
+}
+
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+button {
+  background-color: var(--accent-color);
+  color: #000;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 1rem;
+  border-radius: 4px;
+}
+
+button:active {
+  background-color: #ccac00;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background-color: var(--input-bg);
+  border: 2px solid var(--border-color);
+  color: #fff;
+  font-size: 1rem;
+  border-radius: 4px;
+}
+
+input:focus {
+  border-color: var(--accent-color);
+  outline: none;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+  color: var(--accent-color);
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.content {
+  flex: 1;
+  padding-bottom: 4rem;
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4rem;
+  background-color: var(--secondary-bg);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  border-top: 2px solid var(--border-color);
+}
+
+.nav-item {
+  color: var(--text-color);
+  text-decoration: none;
+  font-size: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.nav-item.active {
+  color: var(--accent-color);
+}
+
+.signature-container {
+  background: #fff;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
