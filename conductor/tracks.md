@@ -17,4 +17,4 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [x] **Track: Codebase Cleanup & Refactor (2026-03-08).**
   *Link: [./archive/code_cleanup_refactor_20260308/](./archive/code_cleanup_refactor_20260308/)*
 - [x] **Track: Dashboard Enhancement - Information-Rich Command Center.**
-  *Link: [./tracks/2026-03-08-dashboard-enhancement-v2/](./tracks/2026-03-08-dashboard-enhancement-v2/)*
+  *Link: [./archive/dashboard_enhancement_20260308/](./archive/dashboard_enhancement_20260308/)*
