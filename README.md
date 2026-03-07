@@ -6,7 +6,7 @@ SubLink is a local-first mobile Progressive Web App (PWA) designed for subcontra
 
 ### Key Features
 - **Instant Lien Waivers:** Generate signed PDF lien waivers on-site. Capture signatures directly on your screen and export as standardized PDFs.
-- **Compliance Tracking:** Manage Certificates of Insurance (COIs) with automated alerts (Coming Soon).
+- **Compliance Vault:** Manage Certificates of Insurance (COIs) with color-coded expiration tracking. Stay compliant with automated visual alerts for expired and expiring-soon certificates.
 - **Photo-Verified Tasking:** Geospatial/Timestamped photo evidence for proof of work (Coming Soon).
 - **Offline-First:** Fully functional without an internet connection using IndexedDB for local storage.
 

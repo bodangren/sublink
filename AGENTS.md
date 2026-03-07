@@ -1,4 +1,5 @@
 # SubLink Autonomous Agent Protocol
+This projects is organized using the /conductor extension (skill) and all documentation lives in conductor/. 
 
 ## Operating Mode: Full Autonomy (CRON)
 This project is operated by an AI agent running on a 6-hour cron cycle. The agent is authorized to make all technical, design, and implementation decisions without human intervention.

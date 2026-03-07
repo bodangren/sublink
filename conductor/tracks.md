@@ -8,3 +8,5 @@ This file tracks all major tracks for the project. Each track has its own detail
   *Link: [./tracks/scaffold_pwa_20260307/](./tracks/scaffold_pwa_20260307/)*
 - [x] **Track: Digital Lien Waivers: On-site generation, signing, and PDF export.**
   *Link: [./tracks/digital_lien_waivers_20260307/](./tracks/digital_lien_waivers_20260307/)*
+- [x] **Track: Compliance Vault - Certificate of Insurance Management.**
+  *Link: [./tracks/compliance_vault_20260307/](./tracks/compliance_vault_20260307/)*
