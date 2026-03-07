@@ -117,3 +117,134 @@ label {
   border-radius: 4px;
   margin-bottom: 1rem;
 }
+
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.stat-card {
+  background-color: var(--secondary-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: var(--accent-color);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--text-color);
+  margin-top: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dashboard-card {
+  background-color: var(--secondary-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.success-card {
+  border-color: var(--success-color);
+}
+
+.warning-card {
+  border-color: var(--accent-color);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.card-icon {
+  font-size: 1.5rem;
+}
+
+.card-header h3 {
+  margin: 0;
+  padding: 0;
+  font-size: 1rem;
+  color: var(--text-color);
+}
+
+.card-text {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.card-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.card-list-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.card-list-item:last-child {
+  border-bottom: none;
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.item-title {
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.status-badge {
+  color: #fff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.item-details {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.item-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.item-link:hover {
+  opacity: 0.8;
+}
+
+.card-link {
+  text-decoration: none;
+}
+
+.card-button {
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+  margin-top: 1rem;
+}

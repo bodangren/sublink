@@ -6,26 +6,24 @@ import COIForm from './components/COIForm'
 import TaskForm from './components/TaskForm'
 import TaskList from './components/TaskList'
 import TaskDetail from './components/TaskDetail'
+import DashboardStats from './components/DashboardStats'
+import ExpiringCOIs from './components/ExpiringCOIs'
+import RecentTasks from './components/RecentTasks'
+import RecentWaivers from './components/RecentWaivers'
 import { getWaivers, getCOIs, deleteCOI, getTasks } from './db'
 import type { Waiver, Certificate, Task } from './db'
 import { getCOIStatus, getStatusColor, getStatusLabel } from './utils/coiStatus'
 import { useItemId, useTaskIdFromPath, useEditItem, formatCurrency } from './hooks/useEditWrapper'
 
 const Home = () => {
-  const [taskCount, setTaskCount] = useState(0)
-
-  useEffect(() => {
-    let mounted = true
-    getTasks().then(tasks => {
-      if (mounted) setTaskCount(tasks.length)
-    })
-    return () => { mounted = false }
-  }, [])
-
   return (
     <div className="container">
       <h1>SubLink</h1>
       <p>Rugged utility for subcontractors.</p>
+      <DashboardStats />
+      <ExpiringCOIs />
+      <RecentTasks />
+      <RecentWaivers />
       <div style={{ marginTop: '2rem' }}>
         <NavLink to="/tasking/new">
           <button>Quick Task + Photo</button>
@@ -37,16 +35,6 @@ const Home = () => {
           <button style={{ marginTop: '0.5rem' }}>Add Certificate</button>
         </NavLink>
       </div>
-      {taskCount > 0 && (
-        <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: 'var(--secondary-bg)', borderRadius: '4px' }}>
-          <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
-            You have <strong style={{ color: 'var(--accent-color)' }}>{taskCount}</strong> active task{taskCount !== 1 ? 's' : ''}
-          </p>
-          <NavLink to="/tasking" style={{ display: 'inline-block', marginTop: '0.5rem' }}>
-            <button style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}>View Tasks</button>
-          </NavLink>
-        </div>
-      )}
     </div>
   )
 }

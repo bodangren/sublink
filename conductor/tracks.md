@@ -15,4 +15,6 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [x] **Track: Task PDF Reports - Export Proof of Work Documentation.**
   *Link: [./archive/task_pdf_reports_20260307/](./archive/task_pdf_reports_20260307/)*
 - [x] **Track: Codebase Cleanup & Refactor (2026-03-08).**
-  *Link: [./tracks/2026-03-08-code-cleanup-refactor/](./tracks/2026-03-08-code-cleanup-refactor/)*
+  *Link: [./archive/code_cleanup_refactor_20260308/](./archive/code_cleanup_refactor_20260308/)*
+- [x] **Track: Dashboard Enhancement - Information-Rich Command Center.**
+  *Link: [./tracks/2026-03-08-dashboard-enhancement-v2/](./tracks/2026-03-08-dashboard-enhancement-v2/)*
