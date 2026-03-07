@@ -9,8 +9,8 @@ import TaskDetail from './components/TaskDetail'
 import { getWaivers, getCOIs, deleteCOI, getTasks } from './db'
 import type { Waiver, Certificate, Task } from './db'
 import { getCOIStatus, getStatusColor, getStatusLabel } from './utils/coiStatus'
+import { useItemId, useTaskIdFromPath, useEditItem, formatCurrency } from './hooks/useEditWrapper'
 
-// Placeholder components
 const Home = () => {
   const [taskCount, setTaskCount] = useState(0)
 
@@ -156,7 +156,7 @@ const Compliance = () => {
                   <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                     Policy: {coi.policyNumber}<br/>
                     Expires: {new Date(coi.expirationDate).toLocaleDateString()}<br/>
-                    Coverage: ${parseInt(coi.coverageAmount).toLocaleString()}
+                    Coverage: ${formatCurrency(coi.coverageAmount)}
                   </div>
                   <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
                     <NavLink to={`/compliance/edit/${coi.id}`}>
@@ -180,21 +180,11 @@ const Compliance = () => {
 }
 
 const COIEditWrapper = () => {
-  const [coi, setCOI] = useState<Certificate | null>(null)
-  const id = window.location.pathname.split('/').pop()
+  const id = useItemId() || ''
+  const { item: coi, loading } = useEditItem<Certificate>(id, getCOIs, (c: Certificate, id: string) => c.id === id)
 
-  useEffect(() => {
-    const loadCOI = async () => {
-      if (id) {
-        const cois = await getCOIs()
-        const found = cois.find(c => c.id === id)
-        if (found) setCOI(found)
-      }
-    }
-    loadCOI()
-  }, [id])
-
-  if (!coi) return <div className="container"><p>Loading...</p></div>
+  if (loading) return <div className="container"><p>Loading...</p></div>
+  if (!coi) return <div className="container"><p>Certificate not found.</p></div>
 
   return <COIForm editId={id} initialData={coi} />
 }
@@ -202,21 +192,11 @@ const COIEditWrapper = () => {
 const Tasking = () => <TaskList />
 
 const TaskEditWrapper = () => {
-  const [task, setTask] = useState<Task | null>(null)
-  const id = window.location.pathname.split('/').pop()
+  const id = useItemId() || ''
+  const { item: task, loading } = useEditItem<Task>(id, getTasks, (t: Task, id: string) => t.id === id)
 
-  useEffect(() => {
-    const loadTask = async () => {
-      if (id) {
-        const tasks = await getTasks()
-        const found = tasks.find(t => t.id === id)
-        if (found) setTask(found)
-      }
-    }
-    loadTask()
-  }, [id])
-
-  if (!task) return <div className="container"><p>Loading...</p></div>
+  if (loading) return <div className="container"><p>Loading...</p></div>
+  if (!task) return <div className="container"><p>Task not found.</p></div>
 
   return <TaskForm editId={id} initialData={{ 
     title: task.title, 
@@ -226,7 +206,7 @@ const TaskEditWrapper = () => {
 }
 
 const TaskDetailWrapper = () => {
-  const id = window.location.pathname.split('/').slice(-2)[0]
+  const id = useTaskIdFromPath()
 
   if (!id) return <div className="container"><p>Task not found.</p></div>
 
