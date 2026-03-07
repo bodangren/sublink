@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, NavLink } from 'react-router-dom'
-import { getTask, getPhotosByTask, getPhotoCountByTask, savePhoto, deleteTask } from '../db'
-import { getGPSLocation, createWatermarkText } from '../utils/gps'
-import { applyWatermark } from '../utils/watermark'
+import { getTask, deleteTask } from '../db'
+import { usePhotoCapture } from '../hooks/usePhotoCapture'
 import { generateTaskPDF, downloadPDF, generatePDFFilename } from '../utils/pdfGenerator'
 import PhotoGallery from './PhotoGallery'
-import type { Task, TaskPhoto } from '../db'
+import type { Task } from '../db'
 
 interface TaskDetailProps {
   taskId: string
@@ -14,13 +13,18 @@ interface TaskDetailProps {
 const TaskDetail = ({ taskId }: TaskDetailProps) => {
   const navigate = useNavigate()
   const [task, setTask] = useState<Task | null>(null)
-  const [photos, setPhotos] = useState<TaskPhoto[]>([])
-  const [photoCount, setPhotoCount] = useState(0)
-  const [isCapturing, setIsCapturing] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setLocalError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  const {
+    photos,
+    photoCount,
+    isCapturing,
+    error: captureError,
+    fileInputRef,
+    handleCapture
+  } = usePhotoCapture(taskId)
 
   useEffect(() => {
     let mounted = true
@@ -33,10 +37,6 @@ const TaskDetail = ({ taskId }: TaskDetailProps) => {
           return
         }
         setTask(taskData)
-        const photoList = await getPhotosByTask(taskId)
-        setPhotos(photoList)
-        const count = await getPhotoCountByTask(taskId)
-        setPhotoCount(count)
       } catch (err) {
         console.error('Failed to load task:', err)
       } finally {
@@ -46,63 +46,6 @@ const TaskDetail = ({ taskId }: TaskDetailProps) => {
     loadData()
     return () => { mounted = false }
   }, [taskId, navigate])
-
-  const refreshPhotos = async () => {
-    const photoList = await getPhotosByTask(taskId)
-    setPhotos(photoList)
-    const count = await getPhotoCountByTask(taskId)
-    setPhotoCount(count)
-  }
-
-  const handleCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    setIsCapturing(true)
-    setError(null)
-
-    try {
-      const reader = new FileReader()
-      reader.onload = async (e) => {
-        try {
-          const imageData = e.target?.result as string
-          
-          const gps = await getGPSLocation()
-          const timestamp = Date.now()
-          const watermarkText = createWatermarkText(
-            gps?.latitude,
-            gps?.longitude,
-            timestamp
-          )
-          
-          const watermarkedImage = await applyWatermark(imageData, watermarkText)
-          
-          await savePhoto({
-            taskId,
-            imageData: watermarkedImage,
-            latitude: gps?.latitude,
-            longitude: gps?.longitude,
-            capturedAt: timestamp,
-            watermarkData: watermarkText,
-          })
-          
-          await refreshPhotos()
-          setIsCapturing(false)
-        } catch (err) {
-          setError('Failed to process photo')
-          setIsCapturing(false)
-        }
-      }
-      reader.readAsDataURL(file)
-    } catch (err) {
-      setError('Failed to capture photo')
-      setIsCapturing(false)
-    }
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }
 
   const handleDeleteTask = async () => {
     if (window.confirm('Are you sure you want to delete this task? All photos will also be deleted.')) {
@@ -121,7 +64,7 @@ const TaskDetail = ({ taskId }: TaskDetailProps) => {
       downloadPDF(blob, filename)
     } catch (err) {
       console.error('Failed to generate PDF:', err)
-      setError('Failed to generate PDF. Please try again.')
+      setLocalError('Failed to generate PDF. Please try again.')
     } finally {
       setIsExporting(false)
     }
@@ -179,6 +122,12 @@ const TaskDetail = ({ taskId }: TaskDetailProps) => {
       {error && (
         <div style={{ backgroundColor: '#dc3545', color: '#fff', padding: '0.75rem', borderRadius: '4px', marginBottom: '1rem' }}>
           {error}
+        </div>
+      )}
+
+      {captureError && (
+        <div style={{ backgroundColor: '#dc3545', color: '#fff', padding: '0.75rem', borderRadius: '4px', marginBottom: '1rem' }}>
+          {captureError}
         </div>
       )}
 

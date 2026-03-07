@@ -17,6 +17,7 @@ const WaiverForm = () => {
     amount: '',
     date: new Date().toISOString().split('T')[0],
   })
+  const [error, setError] = useState<string | null>(null)
   const sigPad = useRef<SignatureCanvas>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,9 +31,10 @@ const WaiverForm = () => {
 
   const generatePDF = () => {
     if (sigPad.current?.isEmpty()) {
-      alert('Please provide a signature first.')
+      setError('Please provide a signature first.')
       return
     }
+    setError(null)
 
     const doc = new jsPDF()
     const signatureImage = sigPad.current?.getTrimmedCanvas().toDataURL('image/png')
@@ -67,6 +69,11 @@ const WaiverForm = () => {
   return (
     <div className="container">
       <h2>New Lien Waiver</h2>
+      {error && (
+        <div style={{ backgroundColor: '#dc3545', color: '#fff', padding: '0.75rem', borderRadius: '4px', marginBottom: '1rem' }}>
+          {error}
+        </div>
+      )}
       <form onSubmit={(e) => e.preventDefault()}>
         <label>Project Name</label>
         <input 

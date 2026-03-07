@@ -28,6 +28,8 @@ const COIForm = ({ editId, initialData }: COIFormProps) => {
     coverageAmount: '',
     notes: '',
   })
+  const [error, setError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -36,6 +38,8 @@ const COIForm = ({ editId, initialData }: COIFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsSubmitting(true)
+    setError(null)
     
     try {
       if (editId) {
@@ -44,15 +48,22 @@ const COIForm = ({ editId, initialData }: COIFormProps) => {
         await saveCOI(formData)
       }
       navigate('/compliance')
-    } catch (error) {
-      alert('Failed to save certificate. Please try again.')
-      console.error(error)
+    } catch (err) {
+      setError('Failed to save certificate. Please try again.')
+      console.error(err)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   return (
     <div className="container">
       <h2>{editId ? 'Edit Certificate' : 'Add New Certificate'}</h2>
+      {error && (
+        <div style={{ backgroundColor: '#dc3545', color: '#fff', padding: '0.75rem', borderRadius: '4px', marginBottom: '1rem' }}>
+          {error}
+        </div>
+      )}
       <form onSubmit={handleSubmit}>
         <label htmlFor="insuranceCompany">Insurance Company</label>
         <input 
@@ -132,8 +143,8 @@ const COIForm = ({ editId, initialData }: COIFormProps) => {
           rows={3}
         />
 
-        <button type="submit">
-          {editId ? 'Update Certificate' : 'Save Certificate'}
+        <button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Saving...' : (editId ? 'Update Certificate' : 'Save Certificate')}
         </button>
         
         <button 

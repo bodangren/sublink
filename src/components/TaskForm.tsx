@@ -20,6 +20,8 @@ const TaskForm = ({ editId, initialData }: TaskFormProps) => {
     description: '',
     contractReference: '',
   })
+  const [error, setError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -28,6 +30,8 @@ const TaskForm = ({ editId, initialData }: TaskFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsSubmitting(true)
+    setError(null)
     
     try {
       const taskData = {
@@ -42,15 +46,22 @@ const TaskForm = ({ editId, initialData }: TaskFormProps) => {
         await saveTask(taskData)
       }
       navigate('/tasking')
-    } catch (error) {
-      alert('Failed to save task. Please try again.')
-      console.error(error)
+    } catch (err) {
+      setError('Failed to save task. Please try again.')
+      console.error(err)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   return (
     <div className="container">
       <h2>{editId ? 'Edit Task' : 'New Task'}</h2>
+      {error && (
+        <div style={{ backgroundColor: '#dc3545', color: '#fff', padding: '0.75rem', borderRadius: '4px', marginBottom: '1rem' }}>
+          {error}
+        </div>
+      )}
       <form onSubmit={handleSubmit}>
         <label htmlFor="title">Title</label>
         <input 
@@ -84,8 +95,8 @@ const TaskForm = ({ editId, initialData }: TaskFormProps) => {
           placeholder="e.g. CONTRACT-2024-001"
         />
 
-        <button type="submit">
-          {editId ? 'Update Task' : 'Save Task'}
+        <button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Saving...' : (editId ? 'Update Task' : 'Save Task')}
         </button>
         
         <button 

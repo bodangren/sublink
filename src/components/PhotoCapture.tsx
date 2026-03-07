@@ -1,9 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { savePhoto, getPhotosByTask, getPhotoCountByTask } from '../db'
-import { getGPSLocation, createWatermarkText } from '../utils/gps'
-import { applyWatermark } from '../utils/watermark'
-import type { TaskPhoto } from '../db'
+import { usePhotoCapture } from '../hooks/usePhotoCapture'
 
 interface PhotoCaptureProps {
   taskId: string
@@ -12,74 +8,14 @@ interface PhotoCaptureProps {
 
 const PhotoCapture = ({ taskId, taskTitle }: PhotoCaptureProps) => {
   const navigate = useNavigate()
-  const [photoCount, setPhotoCount] = useState(0)
-  const [photos, setPhotos] = useState<TaskPhoto[]>([])
-  const [isCapturing, setIsCapturing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    const loadData = async () => {
-      const count = await getPhotoCountByTask(taskId)
-      setPhotoCount(count)
-      const photoList = await getPhotosByTask(taskId)
-      setPhotos(photoList)
-    }
-    loadData()
-  }, [taskId])
-
-  const handleCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    setIsCapturing(true)
-    setError(null)
-
-    try {
-      const reader = new FileReader()
-      reader.onload = async (e) => {
-        try {
-          const imageData = e.target?.result as string
-          
-          const gps = await getGPSLocation()
-          const timestamp = Date.now()
-          const watermarkText = createWatermarkText(
-            gps?.latitude,
-            gps?.longitude,
-            timestamp
-          )
-          
-          const watermarkedImage = await applyWatermark(imageData, watermarkText)
-          
-          await savePhoto({
-            taskId,
-            imageData: watermarkedImage,
-            latitude: gps?.latitude,
-            longitude: gps?.longitude,
-            capturedAt: timestamp,
-            watermarkData: watermarkText,
-          })
-          
-          const count = await getPhotoCountByTask(taskId)
-          setPhotoCount(count)
-          const photoList = await getPhotosByTask(taskId)
-          setPhotos(photoList)
-          setIsCapturing(false)
-        } catch (err) {
-          setError('Failed to process photo')
-          setIsCapturing(false)
-        }
-      }
-      reader.readAsDataURL(file)
-    } catch (err) {
-      setError('Failed to capture photo')
-      setIsCapturing(false)
-    }
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }
+  const {
+    photos,
+    photoCount,
+    isCapturing,
+    error,
+    fileInputRef,
+    handleCapture
+  } = usePhotoCapture(taskId)
 
   const handleBack = () => {
     navigate('/tasking')

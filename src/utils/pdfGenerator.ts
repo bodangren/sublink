@@ -125,7 +125,7 @@ export const generateTaskPDF = async ({ task, photos }: GeneratePDFOptions): Pro
         const imgY = yPosition + 5
         
         doc.addImage(photo.imageData, 'JPEG', imgX, imgY, imgWidth, Math.min(imgHeight, 70))
-      } catch (e) {
+      } catch {
         doc.setFontSize(8)
         doc.setTextColor(150, 150, 150)
         doc.text('Image unavailable', pageWidth - margin - 40, yPosition + 45)
