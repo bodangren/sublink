@@ -10,3 +10,5 @@ This file tracks all major tracks for the project. Each track has its own detail
   *Link: [./tracks/digital_lien_waivers_20260307/](./tracks/digital_lien_waivers_20260307/)*
 - [x] **Track: Compliance Vault - Certificate of Insurance Management.**
   *Link: [./tracks/compliance_vault_20260307/](./tracks/compliance_vault_20260307/)*
+- [x] **Track: Photo-Verified Tasks - Proof of Work Documentation.**
+  *Link: [./tracks/photo_verified_tasks_20260307/](./tracks/photo_verified_tasks_20260307/)*

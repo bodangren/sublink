@@ -3,20 +3,53 @@ import { useState, useEffect } from 'react'
 import './index.css'
 import WaiverForm from './components/WaiverForm'
 import COIForm from './components/COIForm'
-import { getWaivers, getCOIs, deleteCOI } from './db'
-import type { Waiver, Certificate } from './db'
+import TaskForm from './components/TaskForm'
+import TaskList from './components/TaskList'
+import TaskDetail from './components/TaskDetail'
+import { getWaivers, getCOIs, deleteCOI, getTasks } from './db'
+import type { Waiver, Certificate, Task } from './db'
 import { getCOIStatus, getStatusColor, getStatusLabel } from './utils/coiStatus'
 
 // Placeholder components
-const Home = () => (
-  <div className="container">
-    <h1>SubLink</h1>
-    <p>Rugged utility for subcontractors.</p>
-    <div style={{ marginTop: '2rem' }}>
-      <button onClick={() => window.location.href = '/waivers'}>New Lien Waiver</button>
+const Home = () => {
+  const [taskCount, setTaskCount] = useState(0)
+
+  useEffect(() => {
+    let mounted = true
+    getTasks().then(tasks => {
+      if (mounted) setTaskCount(tasks.length)
+    })
+    return () => { mounted = false }
+  }, [])
+
+  return (
+    <div className="container">
+      <h1>SubLink</h1>
+      <p>Rugged utility for subcontractors.</p>
+      <div style={{ marginTop: '2rem' }}>
+        <NavLink to="/tasking/new">
+          <button>Quick Task + Photo</button>
+        </NavLink>
+        <NavLink to="/waivers/new">
+          <button style={{ marginTop: '0.5rem' }}>New Lien Waiver</button>
+        </NavLink>
+        <NavLink to="/compliance/new">
+          <button style={{ marginTop: '0.5rem' }}>Add Certificate</button>
+        </NavLink>
+      </div>
+      {taskCount > 0 && (
+        <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: 'var(--secondary-bg)', borderRadius: '4px' }}>
+          <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
+            You have <strong style={{ color: 'var(--accent-color)' }}>{taskCount}</strong> active task{taskCount !== 1 ? 's' : ''}
+          </p>
+          <NavLink to="/tasking" style={{ display: 'inline-block', marginTop: '0.5rem' }}>
+            <button style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}>View Tasks</button>
+          </NavLink>
+        </div>
+      )}
     </div>
-  </div>
-)
+  )
+}
 
 const Waivers = () => {
   const [waivers, setWaivers] = useState<Waiver[]>([])
@@ -166,12 +199,39 @@ const COIEditWrapper = () => {
   return <COIForm editId={id} initialData={coi} />
 }
 
-const Tasking = () => (
-  <div className="container">
-    <h1>Photo-Verified Tasks</h1>
-    <p>Proof of work with GPS & timestamps.</p>
-  </div>
-)
+const Tasking = () => <TaskList />
+
+const TaskEditWrapper = () => {
+  const [task, setTask] = useState<Task | null>(null)
+  const id = window.location.pathname.split('/').pop()
+
+  useEffect(() => {
+    const loadTask = async () => {
+      if (id) {
+        const tasks = await getTasks()
+        const found = tasks.find(t => t.id === id)
+        if (found) setTask(found)
+      }
+    }
+    loadTask()
+  }, [id])
+
+  if (!task) return <div className="container"><p>Loading...</p></div>
+
+  return <TaskForm editId={id} initialData={{ 
+    title: task.title, 
+    description: task.description, 
+    contractReference: task.contractReference || '' 
+  }} />
+}
+
+const TaskDetailWrapper = () => {
+  const id = window.location.pathname.split('/').slice(-2)[0]
+
+  if (!id) return <div className="container"><p>Task not found.</p></div>
+
+  return <TaskDetail taskId={id} />
+}
 
 const AppShell = () => (
   <div className="app-shell">
@@ -184,6 +244,9 @@ const AppShell = () => (
         <Route path="/compliance/new" element={<COIForm />} />
         <Route path="/compliance/edit/:id" element={<COIEditWrapper />} />
         <Route path="/tasking" element={<Tasking />} />
+        <Route path="/tasking/new" element={<TaskForm />} />
+        <Route path="/tasking/edit/:id" element={<TaskEditWrapper />} />
+        <Route path="/tasking/:id" element={<TaskDetailWrapper />} />
       </Routes>
     </div>
     <nav className="bottom-nav">
