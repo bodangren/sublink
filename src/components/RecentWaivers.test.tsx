@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import RecentWaivers from './RecentWaivers'
@@ -15,6 +15,10 @@ describe('RecentWaivers', () => {
     await clearDatabase()
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('displays message when no waivers exist', async () => {
     renderWithRouter(<RecentWaivers />)
     
@@ -24,6 +28,12 @@ describe('RecentWaivers', () => {
   })
 
   it('displays up to 3 most recent waivers', async () => {
+    let createdAt = 1_700_000_000_000
+    vi.spyOn(Date, 'now').mockImplementation(() => {
+      createdAt += 1_000
+      return createdAt
+    })
+
     for (let i = 1; i <= 5; i++) {
       await saveWaiver({ 
         projectName: `Project ${i}`, 
