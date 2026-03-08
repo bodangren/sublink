@@ -17,8 +17,12 @@ import RecentWaivers from './components/RecentWaivers'
 import ProjectList from './components/ProjectList'
 import ProjectForm from './components/ProjectForm'
 import ProjectDetail from './components/ProjectDetail'
-import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLogs, getProjects } from './db'
-import type { Waiver, Certificate, Task, DailyLog, Project } from './db'
+import TimeEntryList from './components/TimeEntryList'
+import TimeEntryForm from './components/TimeEntryForm'
+import TimeSummary from './components/TimeSummary'
+import ActiveTimer from './components/ActiveTimer'
+import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLogs, getProjects, getTimeEntry } from './db'
+import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry } from './db'
 import { getCOIStatus, getStatusColor, getStatusLabel } from './utils/coiStatus'
 import { useItemId, useTaskIdFromPath, useEditItem, formatCurrency } from './hooks/useEditWrapper'
 
@@ -27,7 +31,9 @@ const Home = () => {
     <div className="container">
       <h1>SubLink</h1>
       <p>Rugged utility for subcontractors.</p>
+      <ActiveTimer compact />
       <DashboardStats />
+      <TimeSummary />
       <TodayLogStatus />
       <ExpiringCOIs />
       <RecentTasks />
@@ -261,6 +267,40 @@ const ProjectEditWrapper = () => {
   }} />
 }
 
+const Time = () => <TimeEntryList />
+
+const TimeEntryEditWrapper = () => {
+  const id = useItemId() || ''
+  const [entry, setEntry] = useState<TimeEntry | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    getTimeEntry(id).then(data => {
+      if (mounted) {
+        setEntry(data || null)
+        setLoading(false)
+      }
+    })
+    return () => { mounted = false }
+  }, [id])
+
+  if (loading) return <div className="container"><p>Loading...</p></div>
+  if (!entry) return <div className="container"><p>Time entry not found.</p></div>
+
+  const formatDateTime = (timestamp: number): string => {
+    return new Date(timestamp).toISOString().slice(0, 16)
+  }
+
+  return <TimeEntryForm editId={id} initialData={{ 
+    projectId: entry.projectId, 
+    taskId: entry.taskId || '', 
+    startTime: formatDateTime(entry.startTime), 
+    endTime: formatDateTime(entry.endTime), 
+    notes: entry.notes || '' 
+  }} />
+}
+
 const AppShell = () => (
   <div className="app-shell">
     <div className="content">
@@ -283,11 +323,17 @@ const AppShell = () => (
         <Route path="/projects/new" element={<ProjectForm />} />
         <Route path="/projects/edit/:id" element={<ProjectEditWrapper />} />
         <Route path="/projects/:id" element={<ProjectDetail />} />
+        <Route path="/time" element={<Time />} />
+        <Route path="/time/new" element={<TimeEntryForm />} />
+        <Route path="/time/edit/:id" element={<TimeEntryEditWrapper />} />
       </Routes>
     </div>
     <nav className="bottom-nav">
       <NavLink to="/" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Home</span>
+      </NavLink>
+      <NavLink to="/time" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+        <span>Time</span>
       </NavLink>
       <NavLink to="/logs" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Logs</span>
@@ -297,9 +343,6 @@ const AppShell = () => (
       </NavLink>
       <NavLink to="/projects" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Projects</span>
-      </NavLink>
-      <NavLink to="/compliance" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-        <span>Compliance</span>
       </NavLink>
     </nav>
   </div>

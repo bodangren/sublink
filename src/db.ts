@@ -87,6 +87,21 @@ export interface SubLinkDB extends DBSchema {
       updatedAt: number
     }
   }
+  timeEntries: {
+    key: string
+    value: {
+      id: string
+      projectId: string
+      taskId?: string
+      startTime: number
+      endTime: number
+      duration: number
+      notes?: string
+      createdAt: number
+      updatedAt: number
+    }
+    indexes: { 'by-project': string, 'by-date': string }
+  }
 }
 
 export type Project = SubLinkDB['projects']['value']
@@ -95,11 +110,12 @@ export type Certificate = SubLinkDB['certificates']['value']
 export type Task = SubLinkDB['tasks']['value']
 export type TaskPhoto = SubLinkDB['photos']['value']
 export type DailyLog = SubLinkDB['dailyLogs']['value']
+export type TimeEntry = SubLinkDB['timeEntries']['value']
 
 let db: IDBPDatabase<SubLinkDB>
 
 export const initDB = async () => {
-  db = await openDB<SubLinkDB>('sublink-db', 5, {
+  db = await openDB<SubLinkDB>('sublink-db', 6, {
     upgrade(db, oldVersion) {
       if (oldVersion < 1) {
         db.createObjectStore('waivers', {
@@ -129,6 +145,13 @@ export const initDB = async () => {
         db.createObjectStore('projects', {
           keyPath: 'id',
         })
+      }
+      if (oldVersion < 6) {
+        const timeStore = db.createObjectStore('timeEntries', {
+          keyPath: 'id',
+        })
+        timeStore.createIndex('by-project', 'projectId')
+        timeStore.createIndex('by-date', 'startTime')
       }
     },
   })
@@ -221,6 +244,7 @@ export const clearDatabase = async () => {
   await db.clear('photos')
   await db.clear('dailyLogs')
   await db.clear('projects')
+  await db.clear('timeEntries')
 }
 
 export const saveProject = async (project: Omit<SubLinkDB['projects']['value'], 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -291,4 +315,48 @@ export const deleteDailyLog = async (id: string) => {
 export const getDailyLogByDate = async (date: string) => {
   const logs = await db.getAll('dailyLogs')
   return logs.find(log => log.date === date)
+}
+
+export const saveTimeEntry = async (entry: Omit<SubLinkDB['timeEntries']['value'], 'id' | 'createdAt' | 'updatedAt'>) => {
+  const id = crypto.randomUUID()
+  const now = Date.now()
+  await db.put('timeEntries', { ...entry, id, createdAt: now, updatedAt: now })
+  return id
+}
+
+export const getTimeEntries = async () => {
+  return await db.getAll('timeEntries')
+}
+
+export const getTimeEntry = async (id: string) => {
+  return await db.get('timeEntries', id)
+}
+
+export const updateTimeEntry = async (id: string, updates: Partial<Omit<SubLinkDB['timeEntries']['value'], 'id' | 'createdAt'>>) => {
+  const existing = await db.get('timeEntries', id)
+  if (!existing) throw new Error('Time entry not found')
+  await db.put('timeEntries', { ...existing, ...updates, updatedAt: Date.now() })
+}
+
+export const deleteTimeEntry = async (id: string) => {
+  await db.delete('timeEntries', id)
+}
+
+export const getTimeEntriesByProject = async (projectId: string) => {
+  const entries = await db.getAll('timeEntries')
+  return entries.filter(entry => entry.projectId === projectId)
+}
+
+export const getTodaysTimeEntries = async () => {
+  const entries = await db.getAll('timeEntries')
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const todayStart = today.getTime()
+  const todayEnd = todayStart + 24 * 60 * 60 * 1000
+  return entries.filter(entry => entry.startTime >= todayStart && entry.startTime < todayEnd)
+}
+
+export const getTotalDurationToday = async () => {
+  const entries = await getTodaysTimeEntries()
+  return entries.reduce((total, entry) => total + entry.duration, 0)
 }
