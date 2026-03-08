@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import RecentTasks from './RecentTasks'
@@ -15,6 +15,10 @@ describe('RecentTasks', () => {
     await clearDatabase()
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('displays message when no tasks exist', async () => {
     renderWithRouter(<RecentTasks />)
     
@@ -24,6 +28,12 @@ describe('RecentTasks', () => {
   })
 
   it('displays up to 5 most recent tasks', async () => {
+    let createdAt = 1_700_000_000_000
+    vi.spyOn(Date, 'now').mockImplementation(() => {
+      createdAt += 1_000
+      return createdAt
+    })
+
     for (let i = 1; i <= 7; i++) {
       await saveTask({ 
         title: `Task ${i}`, 
