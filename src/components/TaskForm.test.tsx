@@ -69,7 +69,8 @@ describe('TaskForm', () => {
     const initialData = {
       title: 'Existing task',
       description: 'Existing description',
-      contractReference: 'REF-123'
+      contractReference: 'REF-123',
+      projectId: ''
     }
     
     renderWithRouter(<TaskForm editId="test-id" initialData={initialData} />)
@@ -88,7 +89,8 @@ describe('TaskForm', () => {
     const initialData = {
       title: 'Test',
       description: 'Test',
-      contractReference: ''
+      contractReference: '',
+      projectId: ''
     }
     
     renderWithRouter(<TaskForm editId="test-id" initialData={initialData} />)

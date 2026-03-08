@@ -30,7 +30,8 @@ describe('DailyLogForm', () => {
     renderWithRouter(<DailyLogForm />)
     
     expect(screen.getByLabelText(/date/i)).toBeDefined()
-    expect(screen.getByLabelText(/project/i)).toBeDefined()
+    expect(screen.getByLabelText(/project.*optional/i)).toBeDefined()
+    expect(screen.getByLabelText(/project.*job site/i)).toBeDefined()
     expect(screen.getByLabelText(/weather/i)).toBeDefined()
     expect(screen.getByLabelText(/work performed/i)).toBeDefined()
     expect(screen.getByLabelText(/delays/i)).toBeDefined()
@@ -51,6 +52,7 @@ describe('DailyLogForm', () => {
     renderWithRouter(<DailyLogForm editId="test-id" initialData={{
       date: '2026-03-08',
       project: 'Test Project',
+      projectId: '',
       weather: 'Sunny',
       workPerformed: 'Test work',
       delays: '',

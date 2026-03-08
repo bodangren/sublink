@@ -2,11 +2,27 @@ import { openDB } from 'idb'
 import type { DBSchema, IDBPDatabase } from 'idb'
 
 export interface SubLinkDB extends DBSchema {
+  projects: {
+    key: string
+    value: {
+      id: string
+      name: string
+      client?: string
+      address?: string
+      contractValue?: string
+      startDate?: string
+      endDate?: string
+      notes?: string
+      createdAt: number
+      updatedAt: number
+    }
+  }
   waivers: {
     key: string
     value: {
       id: string
       projectName: string
+      projectId?: string
       subcontractorName: string
       amount: string
       date: string
@@ -36,6 +52,7 @@ export interface SubLinkDB extends DBSchema {
       title: string
       description: string
       contractReference?: string
+      projectId?: string
       createdAt: number
       updatedAt: number
     }
@@ -59,6 +76,7 @@ export interface SubLinkDB extends DBSchema {
       id: string
       date: string
       project: string
+      projectId?: string
       weather: string
       workPerformed: string
       delays?: string
@@ -71,6 +89,7 @@ export interface SubLinkDB extends DBSchema {
   }
 }
 
+export type Project = SubLinkDB['projects']['value']
 export type Waiver = SubLinkDB['waivers']['value']
 export type Certificate = SubLinkDB['certificates']['value']
 export type Task = SubLinkDB['tasks']['value']
@@ -80,7 +99,7 @@ export type DailyLog = SubLinkDB['dailyLogs']['value']
 let db: IDBPDatabase<SubLinkDB>
 
 export const initDB = async () => {
-  db = await openDB<SubLinkDB>('sublink-db', 4, {
+  db = await openDB<SubLinkDB>('sublink-db', 5, {
     upgrade(db, oldVersion) {
       if (oldVersion < 1) {
         db.createObjectStore('waivers', {
@@ -103,6 +122,11 @@ export const initDB = async () => {
       }
       if (oldVersion < 4) {
         db.createObjectStore('dailyLogs', {
+          keyPath: 'id',
+        })
+      }
+      if (oldVersion < 5) {
+        db.createObjectStore('projects', {
           keyPath: 'id',
         })
       }
@@ -196,6 +220,47 @@ export const clearDatabase = async () => {
   await db.clear('tasks')
   await db.clear('photos')
   await db.clear('dailyLogs')
+  await db.clear('projects')
+}
+
+export const saveProject = async (project: Omit<SubLinkDB['projects']['value'], 'id' | 'createdAt' | 'updatedAt'>) => {
+  const id = crypto.randomUUID()
+  const now = Date.now()
+  await db.put('projects', { ...project, id, createdAt: now, updatedAt: now })
+  return id
+}
+
+export const getProjects = async () => {
+  return await db.getAll('projects')
+}
+
+export const getProject = async (id: string) => {
+  return await db.get('projects', id)
+}
+
+export const updateProject = async (id: string, updates: Partial<Omit<SubLinkDB['projects']['value'], 'id' | 'createdAt'>>) => {
+  const existing = await db.get('projects', id)
+  if (!existing) throw new Error('Project not found')
+  await db.put('projects', { ...existing, ...updates, updatedAt: Date.now() })
+}
+
+export const deleteProject = async (id: string) => {
+  await db.delete('projects', id)
+}
+
+export const getTasksByProject = async (projectId: string) => {
+  const tasks = await db.getAll('tasks')
+  return tasks.filter(task => task.projectId === projectId)
+}
+
+export const getDailyLogsByProject = async (projectId: string) => {
+  const logs = await db.getAll('dailyLogs')
+  return logs.filter(log => log.projectId === projectId)
+}
+
+export const getWaiversByProject = async (projectId: string) => {
+  const waivers = await db.getAll('waivers')
+  return waivers.filter(waiver => waiver.projectId === projectId)
 }
 
 export const saveDailyLog = async (log: Omit<SubLinkDB['dailyLogs']['value'], 'id' | 'createdAt' | 'updatedAt'>) => {

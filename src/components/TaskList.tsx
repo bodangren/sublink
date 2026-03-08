@@ -1,30 +1,38 @@
 import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
-import { getTasks, deleteTask, getPhotoCountByTask } from '../db'
-import type { Task } from '../db'
+import { getTasks, deleteTask, getPhotoCountByTask, getProjects } from '../db'
+import type { Task, Project } from '../db'
 
 interface TaskWithPhotoCount extends Task {
   photoCount: number
+  projectName?: string
 }
 
 const TaskList = () => {
   const [tasks, setTasks] = useState<TaskWithPhotoCount[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
 
   useEffect(() => {
     let mounted = true
-    const loadTasks = async () => {
-      const taskList = await getTasks()
+    const loadData = async () => {
+      const [taskList, projectList] = await Promise.all([
+        getTasks(),
+        getProjects()
+      ])
+      const projectMap = new Map(projectList.map(p => [p.id, p.name]))
       const tasksWithCounts = await Promise.all(
         taskList.map(async (task) => ({
           ...task,
-          photoCount: await getPhotoCountByTask(task.id)
+          photoCount: await getPhotoCountByTask(task.id),
+          projectName: task.projectId ? projectMap.get(task.projectId) : undefined
         }))
       )
       if (mounted) {
+        setProjects(projectList)
         setTasks(tasksWithCounts.sort((a, b) => b.createdAt - a.createdAt))
       }
     }
-    loadTasks()
+    loadData()
     return () => { mounted = false }
   }, [])
 
@@ -32,10 +40,12 @@ const TaskList = () => {
     if (window.confirm('Are you sure you want to delete this task? All photos will also be deleted.')) {
       await deleteTask(id)
       const taskList = await getTasks()
+      const projectMap = new Map(projects.map(p => [p.id, p.name]))
       const tasksWithCounts = await Promise.all(
         taskList.map(async (task) => ({
           ...task,
-          photoCount: await getPhotoCountByTask(task.id)
+          photoCount: await getPhotoCountByTask(task.id),
+          projectName: task.projectId ? projectMap.get(task.projectId) : undefined
         }))
       )
       setTasks(tasksWithCounts.sort((a, b) => b.createdAt - a.createdAt))
@@ -64,7 +74,12 @@ const TaskList = () => {
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
                   <div>
-                    <strong>{task.title}</strong><br/>
+                    <strong>{task.title}</strong>
+                    {task.projectName && (
+                      <div style={{ fontSize: '0.875rem', color: 'var(--accent-color)' }}>
+                        {task.projectName}
+                      </div>
+                    )}
                     <small style={{ color: 'var(--text-secondary)' }}>
                       {new Date(task.createdAt).toLocaleDateString()}
                     </small>

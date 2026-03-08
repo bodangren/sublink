@@ -1,11 +1,13 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { saveTask, updateTask } from '../db'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { saveTask, updateTask, getProjects, getTask } from '../db'
+import type { Project } from '../db'
 
 interface TaskData {
   title: string
   description: string
   contractReference: string
+  projectId: string
 }
 
 interface TaskFormProps {
@@ -15,15 +17,37 @@ interface TaskFormProps {
 
 const TaskForm = ({ editId, initialData }: TaskFormProps) => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const [projects, setProjects] = useState<Project[]>([])
   const [formData, setFormData] = useState<TaskData>(initialData || {
     title: '',
     description: '',
     contractReference: '',
+    projectId: searchParams.get('projectId') || ''
   })
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  useEffect(() => {
+    getProjects().then(setProjects)
+  }, [])
+
+  useEffect(() => {
+    if (editId && !initialData) {
+      getTask(editId).then(task => {
+        if (task) {
+          setFormData({
+            title: task.title,
+            description: task.description,
+            contractReference: task.contractReference || '',
+            projectId: task.projectId || ''
+          })
+        }
+      })
+    }
+  }, [editId, initialData])
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
   }
@@ -37,7 +61,8 @@ const TaskForm = ({ editId, initialData }: TaskFormProps) => {
       const taskData = {
         title: formData.title,
         description: formData.description,
-        ...(formData.contractReference && { contractReference: formData.contractReference })
+        ...(formData.contractReference && { contractReference: formData.contractReference }),
+        ...(formData.projectId && { projectId: formData.projectId })
       }
       
       if (editId) {
@@ -63,6 +88,19 @@ const TaskForm = ({ editId, initialData }: TaskFormProps) => {
         </div>
       )}
       <form onSubmit={handleSubmit}>
+        <label htmlFor="projectId">Project (Optional)</label>
+        <select 
+          id="projectId"
+          name="projectId" 
+          value={formData.projectId} 
+          onChange={handleChange}
+        >
+          <option value="">No Project</option>
+          {projects.map(p => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+
         <label htmlFor="title">Title</label>
         <input 
           id="title"

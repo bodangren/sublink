@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { initDB, saveTask, getTasks, getTask, updateTask, deleteTask, savePhoto, getPhotosByTask, deletePhotosByTask, clearDatabase, saveDailyLog, getDailyLogs, getDailyLog, updateDailyLog, deleteDailyLog, getDailyLogByDate } from './db'
+import { initDB, saveTask, getTasks, getTask, updateTask, deleteTask, savePhoto, getPhotosByTask, deletePhotosByTask, clearDatabase, saveDailyLog, getDailyLogs, getDailyLog, updateDailyLog, deleteDailyLog, getDailyLogByDate, saveProject, getProjects, getProject, updateProject, deleteProject, getTasksByProject, getDailyLogsByProject } from './db'
 import 'fake-indexeddb/auto'
 
 describe('Task database operations', () => {
@@ -484,6 +484,161 @@ describe('Daily Log database operations', () => {
       const log = await getDailyLogByDate('2026-03-08')
       expect(log).toBeDefined()
       expect(log?.project).toBe('March 8 Project')
+    })
+  })
+})
+
+describe('Project database operations', () => {
+  beforeEach(async () => {
+    await initDB()
+    await clearDatabase()
+  })
+
+  describe('saveProject', () => {
+    it('saves a new project and returns its id', async () => {
+      const id = await saveProject({
+        name: 'Test Project',
+        client: 'Test Client',
+        address: '123 Test St',
+        contractValue: '50000',
+        startDate: '2026-01-01',
+        endDate: '2026-06-30',
+        notes: 'Test notes'
+      })
+
+      expect(id).toBeDefined()
+      expect(typeof id).toBe('string')
+    })
+
+    it('saves project with only required fields', async () => {
+      const id = await saveProject({ name: 'Minimal Project' })
+      expect(id).toBeDefined()
+    })
+  })
+
+  describe('getProjects', () => {
+    it('returns empty array when no projects exist', async () => {
+      const projects = await getProjects()
+      expect(projects).toEqual([])
+    })
+
+    it('returns all saved projects', async () => {
+      await saveProject({ name: 'Project 1' })
+      await saveProject({ name: 'Project 2' })
+
+      const projects = await getProjects()
+      expect(projects.length).toBe(2)
+      expect(projects.map(p => p.name)).toContain('Project 1')
+      expect(projects.map(p => p.name)).toContain('Project 2')
+    })
+  })
+
+  describe('getProject', () => {
+    it('returns undefined for non-existent project', async () => {
+      const project = await getProject('non-existent-id')
+      expect(project).toBeUndefined()
+    })
+
+    it('returns the specific project by id', async () => {
+      const id = await saveProject({
+        name: 'Specific Project',
+        client: 'Specific Client'
+      })
+
+      const project = await getProject(id)
+      expect(project).toBeDefined()
+      expect(project?.id).toBe(id)
+      expect(project?.name).toBe('Specific Project')
+      expect(project?.client).toBe('Specific Client')
+    })
+  })
+
+  describe('updateProject', () => {
+    it('updates an existing project', async () => {
+      const id = await saveProject({ name: 'Original Name' })
+
+      await updateProject(id, { name: 'Updated Name' })
+
+      const project = await getProject(id)
+      expect(project?.name).toBe('Updated Name')
+    })
+
+    it('throws error for non-existent project', async () => {
+      await expect(updateProject('non-existent-id', { name: 'New' }))
+        .rejects.toThrow('Project not found')
+    })
+
+    it('updates updatedAt timestamp', async () => {
+      const id = await saveProject({ name: 'Test' })
+      const before = await getProject(id)
+      
+      await new Promise(resolve => setTimeout(resolve, 10))
+      await updateProject(id, { name: 'Updated' })
+      
+      const after = await getProject(id)
+      expect(after?.updatedAt).toBeGreaterThan(before!.updatedAt)
+    })
+  })
+
+  describe('deleteProject', () => {
+    it('deletes an existing project', async () => {
+      const id = await saveProject({ name: 'To Delete' })
+      
+      await deleteProject(id)
+      
+      const projects = await getProjects()
+      expect(projects.find(p => p.id === id)).toBeUndefined()
+    })
+  })
+
+  describe('getTasksByProject', () => {
+    it('returns empty array for project with no tasks', async () => {
+      const projectId = await saveProject({ name: 'Test Project' })
+      const tasks = await getTasksByProject(projectId)
+      expect(tasks).toEqual([])
+    })
+
+    it('returns only tasks for specific project', async () => {
+      const projectId = await saveProject({ name: 'Project 1' })
+      const otherProjectId = await saveProject({ name: 'Project 2' })
+      
+      await saveTask({ title: 'Task 1', description: 'Desc', projectId })
+      await saveTask({ title: 'Task 2', description: 'Desc', projectId })
+      await saveTask({ title: 'Task 3', description: 'Desc', projectId: otherProjectId })
+
+      const tasks = await getTasksByProject(projectId)
+      expect(tasks.length).toBe(2)
+      expect(tasks.map(t => t.title)).toContain('Task 1')
+      expect(tasks.map(t => t.title)).toContain('Task 2')
+      expect(tasks.map(t => t.title)).not.toContain('Task 3')
+    })
+  })
+
+  describe('getDailyLogsByProject', () => {
+    it('returns only logs for specific project', async () => {
+      const projectId = await saveProject({ name: 'Project 1' })
+      const otherProjectId = await saveProject({ name: 'Project 2' })
+      
+      await saveDailyLog({
+        date: '2026-03-08',
+        project: 'Project 1',
+        weather: 'Sunny',
+        workPerformed: 'Work 1',
+        personnel: 'Team 1',
+        projectId
+      })
+      await saveDailyLog({
+        date: '2026-03-07',
+        project: 'Project 2',
+        weather: 'Rainy',
+        workPerformed: 'Work 2',
+        personnel: 'Team 2',
+        projectId: otherProjectId
+      })
+
+      const logs = await getDailyLogsByProject(projectId)
+      expect(logs.length).toBe(1)
+      expect(logs[0].project).toBe('Project 1')
     })
   })
 })

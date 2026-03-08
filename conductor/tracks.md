@@ -20,3 +20,5 @@ This file tracks all major tracks for the project. Each track has its own detail
   *Link: [./archive/dashboard_enhancement_20260308/](./archive/dashboard_enhancement_20260308/)*
 - [x] **Track: Daily Construction Logs - Job Site Documentation.**
   *Link: [./archive/daily_logs_20260308/](./archive/daily_logs_20260308/)*
+- [x] **Track: Project Management - Organize Work by Project.**
+  *Link: [./archive/project_management_20260308/](./archive/project_management_20260308/)*

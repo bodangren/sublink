@@ -1,18 +1,24 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import SignatureCanvas from 'react-signature-canvas'
 import { jsPDF } from 'jspdf'
-import { saveWaiver } from '../db'
+import { saveWaiver, getProjects } from '../db'
+import type { Project } from '../db'
 
 interface WaiverData {
   projectName: string
+  projectId: string
   subcontractorName: string
   amount: string
   date: string
 }
 
 const WaiverForm = () => {
+  const [searchParams] = useSearchParams()
+  const [projects, setProjects] = useState<Project[]>([])
   const [formData, setFormData] = useState<WaiverData>({
     projectName: '',
+    projectId: searchParams.get('projectId') || '',
     subcontractorName: '',
     amount: '',
     date: new Date().toISOString().split('T')[0],
@@ -20,9 +26,31 @@ const WaiverForm = () => {
   const [error, setError] = useState<string | null>(null)
   const sigPad = useRef<SignatureCanvas>(null)
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    getProjects().then(setProjects)
+  }, [])
+
+  useEffect(() => {
+    if (formData.projectId) {
+      const selectedProject = projects.find(p => p.id === formData.projectId)
+      if (selectedProject) {
+        setFormData(prev => ({ ...prev, projectName: selectedProject.name }))
+      }
+    }
+  }, [formData.projectId, projects])
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    if (name === 'projectId') {
+      const selectedProject = projects.find(p => p.id === value)
+      setFormData(prev => ({ 
+        ...prev, 
+        projectId: value, 
+        projectName: selectedProject ? selectedProject.name : '' 
+      }))
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }))
+    }
   }
 
   const clearSignature = () => {
@@ -41,7 +69,11 @@ const WaiverForm = () => {
 
     if (signatureImage) {
       saveWaiver({
-        ...formData,
+        projectName: formData.projectName,
+        projectId: formData.projectId || undefined,
+        subcontractorName: formData.subcontractorName,
+        amount: formData.amount,
+        date: formData.date,
         signature: signatureImage,
       })
     }
@@ -75,6 +107,18 @@ const WaiverForm = () => {
         </div>
       )}
       <form onSubmit={(e) => e.preventDefault()}>
+        <label>Project (Optional)</label>
+        <select 
+          name="projectId" 
+          value={formData.projectId} 
+          onChange={handleChange}
+        >
+          <option value="">Select Project or Enter Manually Below</option>
+          {projects.map(p => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+
         <label>Project Name</label>
         <input 
           type="text" 

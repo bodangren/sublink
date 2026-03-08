@@ -1,10 +1,12 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { saveDailyLog, updateDailyLog } from '../db'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { saveDailyLog, updateDailyLog, getProjects, getDailyLog } from '../db'
+import type { Project } from '../db'
 
 interface DailyLogData {
   date: string
   project: string
+  projectId: string
   weather: string
   workPerformed: string
   delays: string
@@ -24,9 +26,12 @@ const getTodayDate = () => {
 
 const DailyLogForm = ({ editId, initialData }: DailyLogFormProps) => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const [projects, setProjects] = useState<Project[]>([])
   const [formData, setFormData] = useState<DailyLogData>(initialData || {
     date: getTodayDate(),
     project: '',
+    projectId: searchParams.get('projectId') || '',
     weather: '',
     workPerformed: '',
     delays: '',
@@ -37,9 +42,51 @@ const DailyLogForm = ({ editId, initialData }: DailyLogFormProps) => {
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  useEffect(() => {
+    getProjects().then(setProjects)
+  }, [])
+
+  useEffect(() => {
+    if (editId && !initialData) {
+      getDailyLog(editId).then(log => {
+        if (log) {
+          setFormData({
+            date: log.date,
+            project: log.project,
+            projectId: log.projectId || '',
+            weather: log.weather,
+            workPerformed: log.workPerformed,
+            delays: log.delays || '',
+            personnel: log.personnel,
+            equipment: log.equipment || '',
+            notes: log.notes || ''
+          })
+        }
+      })
+    }
+  }, [editId, initialData])
+
+  useEffect(() => {
+    if (!editId && !initialData && formData.projectId) {
+      const selectedProject = projects.find(p => p.id === formData.projectId)
+      if (selectedProject) {
+        setFormData(prev => ({ ...prev, project: selectedProject.name }))
+      }
+    }
+  }, [formData.projectId, projects, editId, initialData])
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    if (name === 'projectId') {
+      const selectedProject = projects.find(p => p.id === value)
+      setFormData(prev => ({ 
+        ...prev, 
+        projectId: value, 
+        project: selectedProject ? selectedProject.name : '' 
+      }))
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }))
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,6 +101,7 @@ const DailyLogForm = ({ editId, initialData }: DailyLogFormProps) => {
         weather: formData.weather,
         workPerformed: formData.workPerformed,
         personnel: formData.personnel,
+        ...(formData.projectId && { projectId: formData.projectId }),
         ...(formData.delays && { delays: formData.delays }),
         ...(formData.equipment && { equipment: formData.equipment }),
         ...(formData.notes && { notes: formData.notes }),
@@ -92,7 +140,20 @@ const DailyLogForm = ({ editId, initialData }: DailyLogFormProps) => {
           required
         />
 
-        <label htmlFor="project">Project / Job Site</label>
+        <label htmlFor="projectId">Project (Optional)</label>
+        <select 
+          id="projectId"
+          name="projectId" 
+          value={formData.projectId} 
+          onChange={handleChange}
+        >
+          <option value="">Select Project or Enter Manually Below</option>
+          {projects.map(p => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+
+        <label htmlFor="project">Project / Job Site Name</label>
         <input 
           id="project"
           type="text" 

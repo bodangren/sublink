@@ -14,8 +14,11 @@ import DashboardStats from './components/DashboardStats'
 import ExpiringCOIs from './components/ExpiringCOIs'
 import RecentTasks from './components/RecentTasks'
 import RecentWaivers from './components/RecentWaivers'
-import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLogs } from './db'
-import type { Waiver, Certificate, Task, DailyLog } from './db'
+import ProjectList from './components/ProjectList'
+import ProjectForm from './components/ProjectForm'
+import ProjectDetail from './components/ProjectDetail'
+import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLogs, getProjects } from './db'
+import type { Waiver, Certificate, Task, DailyLog, Project } from './db'
 import { getCOIStatus, getStatusColor, getStatusLabel } from './utils/coiStatus'
 import { useItemId, useTaskIdFromPath, useEditItem, formatCurrency } from './hooks/useEditWrapper'
 
@@ -197,7 +200,8 @@ const TaskEditWrapper = () => {
   return <TaskForm editId={id} initialData={{ 
     title: task.title, 
     description: task.description, 
-    contractReference: task.contractReference || '' 
+    contractReference: task.contractReference || '',
+    projectId: task.projectId || ''
   }} />
 }
 
@@ -221,6 +225,7 @@ const DailyLogEditWrapper = () => {
   return <DailyLogForm editId={id} initialData={{ 
     date: log.date, 
     project: log.project, 
+    projectId: log.projectId || '',
     weather: log.weather, 
     workPerformed: log.workPerformed, 
     delays: log.delays || '', 
@@ -236,6 +241,24 @@ const DailyLogDetailWrapper = () => {
   if (!id) return <div className="container"><p>Daily log not found.</p></div>
 
   return <DailyLogDetail logId={id} />
+}
+
+const ProjectEditWrapper = () => {
+  const id = useItemId() || ''
+  const { item: project, loading } = useEditItem<Project>(id, getProjects, (p: Project, id: string) => p.id === id)
+
+  if (loading) return <div className="container"><p>Loading...</p></div>
+  if (!project) return <div className="container"><p>Project not found.</p></div>
+
+  return <ProjectForm editId={id} initialData={{ 
+    name: project.name, 
+    client: project.client || '', 
+    address: project.address || '', 
+    contractValue: project.contractValue || '', 
+    startDate: project.startDate || '', 
+    endDate: project.endDate || '', 
+    notes: project.notes || '' 
+  }} />
 }
 
 const AppShell = () => (
@@ -256,6 +279,10 @@ const AppShell = () => (
         <Route path="/tasking/new" element={<TaskForm />} />
         <Route path="/tasking/edit/:id" element={<TaskEditWrapper />} />
         <Route path="/tasking/:id" element={<TaskDetailWrapper />} />
+        <Route path="/projects" element={<ProjectList />} />
+        <Route path="/projects/new" element={<ProjectForm />} />
+        <Route path="/projects/edit/:id" element={<ProjectEditWrapper />} />
+        <Route path="/projects/:id" element={<ProjectDetail />} />
       </Routes>
     </div>
     <nav className="bottom-nav">
@@ -268,8 +295,8 @@ const AppShell = () => (
       <NavLink to="/tasking" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Tasks</span>
       </NavLink>
-      <NavLink to="/waivers" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-        <span>Waivers</span>
+      <NavLink to="/projects" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+        <span>Projects</span>
       </NavLink>
       <NavLink to="/compliance" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Compliance</span>
