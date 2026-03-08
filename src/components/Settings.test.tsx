@@ -4,6 +4,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import Settings from './Settings'
 import * as db from '../db'
 import * as backup from '../utils/dataBackup'
+import type { BackupFile } from '../utils/dataBackup'
 import 'fake-indexeddb/auto'
 
 vi.mock('../db', () => ({
@@ -61,7 +62,7 @@ describe('Settings', () => {
   })
 
   it('calls export functions when export button clicked', async () => {
-    const mockData = { projects: [], waivers: [], certificates: [], tasks: [], photos: [], dailyLogs: [], timeEntries: [], invoices: [] }
+    const mockData = { projects: [], waivers: [], certificates: [], tasks: [], photos: [], dailyLogs: [], timeEntries: [], invoices: [], expenses: [] }
     const mockBackup = {
       version: '1.0',
       appVersion: '1.2.0',
@@ -71,8 +72,8 @@ describe('Settings', () => {
       data: mockData,
     }
 
-    vi.mocked(db.exportAllData).mockResolvedValue(mockData as any)
-    vi.mocked(backup.createBackupFile).mockResolvedValue(mockBackup as any)
+    vi.mocked(db.exportAllData).mockResolvedValue(mockData as ReturnType<typeof db.exportAllData> extends Promise<infer T> ? T : never)
+    vi.mocked(backup.createBackupFile).mockResolvedValue(mockBackup as BackupFile)
 
     renderSettings()
 

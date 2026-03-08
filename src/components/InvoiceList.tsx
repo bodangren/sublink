@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { getInvoices, deleteInvoice } from '../db'
 import type { Invoice } from '../db'
+import { useConfirm } from '../hooks/useConfirm'
 
 const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('en-US', {
@@ -39,6 +40,7 @@ const getStatusColor = (status: string): string => {
 const InvoiceList = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [filter, setFilter] = useState<'all' | 'draft' | 'pending' | 'paid' | 'overdue'>('all')
+  const confirm = useConfirm()
 
   useEffect(() => {
     let mounted = true
@@ -49,7 +51,13 @@ const InvoiceList = () => {
   }, [])
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this invoice?')) {
+    const confirmed = await confirm({
+      title: 'Delete Invoice',
+      message: 'Are you sure you want to delete this invoice?',
+      confirmLabel: 'Delete',
+      variant: 'danger'
+    })
+    if (confirmed) {
       await deleteInvoice(id)
       const data = await getInvoices()
       setInvoices(data.sort((a, b) => b.createdAt - a.createdAt))

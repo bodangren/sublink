@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, NavLink } from 'react-router-dom'
 import { getInvoice, markInvoicePaid, deleteInvoice } from '../db'
 import type { Invoice } from '../db'
+import { useConfirm } from '../hooks/useConfirm'
 
 const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('en-US', {
@@ -31,6 +32,7 @@ const getInvoiceStatus = (invoice: Invoice): string => {
 const InvoiceDetail = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const confirm = useConfirm()
   const [invoice, setInvoice] = useState<Invoice | null>(null)
   const [loading, setLoading] = useState(true)
   const [downloading, setDownloading] = useState(false)
@@ -50,7 +52,13 @@ const InvoiceDetail = () => {
 
   const handleMarkPaid = async () => {
     if (!invoice || !id) return
-    if (window.confirm('Mark this invoice as paid?')) {
+    const confirmed = await confirm({
+      title: 'Mark as Paid',
+      message: 'Mark this invoice as paid?',
+      confirmLabel: 'Mark Paid',
+      variant: 'info'
+    })
+    if (confirmed) {
       await markInvoicePaid(id)
       const updated = await getInvoice(id)
       setInvoice(updated || null)
@@ -59,7 +67,13 @@ const InvoiceDetail = () => {
 
   const handleDelete = async () => {
     if (!invoice || !id) return
-    if (window.confirm('Are you sure you want to delete this invoice?')) {
+    const confirmed = await confirm({
+      title: 'Delete Invoice',
+      message: 'Are you sure you want to delete this invoice?',
+      confirmLabel: 'Delete',
+      variant: 'danger'
+    })
+    if (confirmed) {
       await deleteInvoice(id)
       navigate('/invoices')
     }

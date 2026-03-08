@@ -3,6 +3,7 @@ import { useNavigate, NavLink } from 'react-router-dom'
 import { getDailyLog, deleteDailyLog } from '../db'
 import type { DailyLog } from '../db'
 import { generateDailyLogPdf } from '../utils/dailyLogPdf'
+import { useConfirm } from '../hooks/useConfirm'
 
 interface DailyLogDetailProps {
   logId: string
@@ -10,6 +11,7 @@ interface DailyLogDetailProps {
 
 const DailyLogDetail = ({ logId }: DailyLogDetailProps) => {
   const navigate = useNavigate()
+  const confirm = useConfirm()
   const [log, setLog] = useState<DailyLog | null>(null)
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
@@ -26,7 +28,13 @@ const DailyLogDetail = ({ logId }: DailyLogDetailProps) => {
   }, [logId])
 
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this daily log?')) {
+    const confirmed = await confirm({
+      title: 'Delete Daily Log',
+      message: 'Are you sure you want to delete this daily log?',
+      confirmLabel: 'Delete',
+      variant: 'danger'
+    })
+    if (confirmed) {
       await deleteDailyLog(logId)
       navigate('/logs')
     }
@@ -98,7 +106,7 @@ const DailyLogDetail = ({ logId }: DailyLogDetailProps) => {
         borderRadius: '4px',
         marginBottom: '1rem'
       }}>
-        <h3 style={{ margin: '0 0 0.5rem 0', padding: 0, fontSize: '1rem' }}>Personnel On Site</h3>
+        <h3 style={{ margin: '0 0 0.5rem 0', padding: 0, fontSize: '1rem' }}>Personnel on Site</h3>
         <p style={{ margin: 0 }}>{log.personnel}</p>
       </div>
 

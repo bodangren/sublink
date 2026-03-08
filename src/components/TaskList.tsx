@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { getTasks, deleteTask, getPhotoCountByTask, getProjects } from '../db'
 import type { Task, Project } from '../db'
+import { useConfirm } from '../hooks/useConfirm'
 
 interface TaskWithPhotoCount extends Task {
   photoCount: number
@@ -11,6 +12,7 @@ interface TaskWithPhotoCount extends Task {
 const TaskList = () => {
   const [tasks, setTasks] = useState<TaskWithPhotoCount[]>([])
   const [projects, setProjects] = useState<Project[]>([])
+  const confirm = useConfirm()
 
   useEffect(() => {
     let mounted = true
@@ -37,7 +39,13 @@ const TaskList = () => {
   }, [])
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this task? All photos will also be deleted.')) {
+    const confirmed = await confirm({
+      title: 'Delete Task',
+      message: 'Are you sure you want to delete this task? All photos will also be deleted.',
+      confirmLabel: 'Delete',
+      variant: 'danger'
+    })
+    if (confirmed) {
       await deleteTask(id)
       const taskList = await getTasks()
       const projectMap = new Map(projects.map(p => [p.id, p.name]))

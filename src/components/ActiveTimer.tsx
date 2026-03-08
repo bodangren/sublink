@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useActiveTimer, formatDuration, formatTime } from '../hooks/useActiveTimer'
 import { saveTimeEntry } from '../db'
+import { useConfirm } from '../hooks/useConfirm'
 
 interface ActiveTimerProps {
   onStop?: () => void
@@ -9,6 +10,7 @@ interface ActiveTimerProps {
 
 const ActiveTimerComponent = ({ onStop, compact = false }: ActiveTimerProps) => {
   const { activeTimer, elapsedSeconds, stopTimer, clearTimer, isRunning } = useActiveTimer()
+  const confirm = useConfirm()
   const [notes, setNotes] = useState('')
   const [showNotes, setShowNotes] = useState(false)
   const [stopping, setStopping] = useState(false)
@@ -32,8 +34,14 @@ const ActiveTimerComponent = ({ onStop, compact = false }: ActiveTimerProps) => 
     onStop?.()
   }
 
-  const handleCancel = () => {
-    if (window.confirm('Discard this timer? Time will not be saved.')) {
+  const handleCancel = async () => {
+    const confirmed = await confirm({
+      title: 'Discard Timer',
+      message: 'Discard this timer? Time will not be saved.',
+      confirmLabel: 'Discard',
+      variant: 'warning'
+    })
+    if (confirmed) {
       clearTimer()
       setShowNotes(false)
       setNotes('')

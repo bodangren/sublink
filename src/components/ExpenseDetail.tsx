@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, NavLink } from 'react-router-dom'
 import { getExpense, deleteExpense, getProject, getInvoice } from '../db'
 import type { Expense, ExpenseCategory } from '../db'
+import { useConfirm } from '../hooks/useConfirm'
 
 interface ExpenseDetailProps {
   expenseId: string
@@ -25,6 +26,7 @@ const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
 
 const ExpenseDetail = ({ expenseId }: ExpenseDetailProps) => {
   const navigate = useNavigate()
+  const confirm = useConfirm()
   const [expense, setExpense] = useState<Expense | null>(null)
   const [projectName, setProjectName] = useState<string | null>(null)
   const [invoiceNumber, setInvoiceNumber] = useState<string | null>(null)
@@ -62,7 +64,13 @@ const ExpenseDetail = ({ expenseId }: ExpenseDetailProps) => {
   }, [expenseId, navigate])
 
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this expense?')) {
+    const confirmed = await confirm({
+      title: 'Delete Expense',
+      message: 'Are you sure you want to delete this expense?',
+      confirmLabel: 'Delete',
+      variant: 'danger'
+    })
+    if (confirmed) {
       await deleteExpense(expenseId)
       navigate('/expenses')
     }

@@ -30,15 +30,6 @@ const WaiverForm = () => {
     getProjects().then(setProjects)
   }, [])
 
-  useEffect(() => {
-    if (formData.projectId) {
-      const selectedProject = projects.find(p => p.id === formData.projectId)
-      if (selectedProject) {
-        setFormData(prev => ({ ...prev, projectName: selectedProject.name }))
-      }
-    }
-  }, [formData.projectId, projects])
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     if (name === 'projectId') {

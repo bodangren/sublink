@@ -3,10 +3,15 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import InvoiceList from './InvoiceList'
 import { initDB, clearDatabase, saveInvoice } from '../db'
+import { ConfirmProvider } from '../hooks/useConfirm'
 import 'fake-indexeddb/auto'
 
 const renderWithRouter = (component: React.ReactElement) => {
-  return render(<BrowserRouter>{component}</BrowserRouter>)
+  return render(
+    <BrowserRouter>
+      <ConfirmProvider>{component}</ConfirmProvider>
+    </BrowserRouter>
+  )
 }
 
 describe('InvoiceList', () => {

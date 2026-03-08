@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import DailyLogDetail from './DailyLogDetail'
 import { initDB, clearDatabase, saveDailyLog } from '../db'
+import { ConfirmProvider } from '../hooks/useConfirm'
 import 'fake-indexeddb/auto'
 
 vi.mock('react-router-dom', async () => {
@@ -14,7 +15,11 @@ vi.mock('react-router-dom', async () => {
 })
 
 const renderWithRouter = (component: React.ReactElement) => {
-  return render(<BrowserRouter>{component}</BrowserRouter>)
+  return render(
+    <BrowserRouter>
+      <ConfirmProvider>{component}</ConfirmProvider>
+    </BrowserRouter>
+  )
 }
 
 describe('DailyLogDetail', () => {

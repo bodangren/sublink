@@ -5,6 +5,7 @@ import { usePhotoCapture } from '../hooks/usePhotoCapture'
 import { generateTaskPDF, downloadPDF, generatePDFFilename } from '../utils/pdfGenerator'
 import PhotoGallery from './PhotoGallery'
 import type { Task } from '../db'
+import { useConfirm } from '../hooks/useConfirm'
 
 interface TaskDetailProps {
   taskId: string
@@ -12,11 +13,11 @@ interface TaskDetailProps {
 
 const TaskDetail = ({ taskId }: TaskDetailProps) => {
   const navigate = useNavigate()
+  const confirm = useConfirm()
   const [task, setTask] = useState<Task | null>(null)
   const [isExporting, setIsExporting] = useState(false)
   const [error, setLocalError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  
   const {
     photos,
     photoCount,
@@ -48,7 +49,13 @@ const TaskDetail = ({ taskId }: TaskDetailProps) => {
   }, [taskId, navigate])
 
   const handleDeleteTask = async () => {
-    if (window.confirm('Are you sure you want to delete this task? All photos will also be deleted.')) {
+    const confirmed = await confirm({
+      title: 'Delete Task',
+      message: 'Are you sure you want to delete this task? All photos will also be deleted.',
+      confirmLabel: 'Delete',
+      variant: 'danger'
+    })
+    if (confirmed) {
       await deleteTask(taskId)
       navigate('/tasking')
     }

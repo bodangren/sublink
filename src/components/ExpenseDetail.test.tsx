@@ -3,10 +3,15 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import ExpenseDetail from './ExpenseDetail'
 import { initDB, saveExpense, getExpenses, clearDatabase, saveProject } from '../db'
+import { ConfirmProvider } from '../hooks/useConfirm'
 import 'fake-indexeddb/auto'
 
 const renderWithRouter = (component: React.ReactElement) => {
-  return render(<BrowserRouter>{component}</BrowserRouter>)
+  return render(
+    <BrowserRouter>
+      <ConfirmProvider>{component}</ConfirmProvider>
+    </BrowserRouter>
+  )
 }
 
 describe('ExpenseDetail', () => {
@@ -99,8 +104,14 @@ describe('ExpenseDetail', () => {
       expect(screen.getByText('Expense to delete')).toBeDefined()
     })
     
-    window.confirm = () => true
-    fireEvent.click(screen.getByText(/delete expense/i))
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Expense' }))
+    
+    await waitFor(() => {
+      expect(screen.getByText('Are you sure you want to delete this expense?')).toBeDefined()
+    })
+    
+    const deleteButtons = screen.getAllByRole('button', { name: 'Delete' })
+    fireEvent.click(deleteButtons[deleteButtons.length - 1])
     
     await waitFor(async () => {
       const expenses = await getExpenses()

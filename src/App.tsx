@@ -34,6 +34,7 @@ import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLogs, getProjects, ge
 import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry, Invoice, Expense } from './db'
 import { getCOIStatus, getStatusColor, getStatusLabel } from './utils/coiStatus'
 import { useItemId, useTaskIdFromPath, useEditItem, formatCurrency } from './hooks/useEditWrapper'
+import { ConfirmProvider, useConfirm } from './hooks/useConfirm'
 
 const Home = () => {
   return (
@@ -112,6 +113,7 @@ const Waivers = () => {
 
 const Compliance = () => {
   const [cois, setCOIs] = useState<Certificate[]>([])
+  const confirm = useConfirm()
 
   useEffect(() => {
     let mounted = true
@@ -122,7 +124,13 @@ const Compliance = () => {
   }, [])
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this certificate?')) {
+    const confirmed = await confirm({
+      title: 'Delete Certificate',
+      message: 'Are you sure you want to delete this certificate?',
+      confirmLabel: 'Delete',
+      variant: 'danger'
+    })
+    if (confirmed) {
       await deleteCOI(id)
       const data = await getCOIs()
       setCOIs(data)
@@ -449,14 +457,18 @@ function App() {
   if (import.meta.env.VITE_ROUTER_MODE === 'hash') {
     return (
       <HashRouter>
-        <AppShell />
+        <ConfirmProvider>
+          <AppShell />
+        </ConfirmProvider>
       </HashRouter>
     )
   }
 
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <AppShell />
+      <ConfirmProvider>
+        <AppShell />
+      </ConfirmProvider>
     </BrowserRouter>
   )
 }

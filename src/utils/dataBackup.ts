@@ -100,7 +100,7 @@ export async function parseBackupFile(file: File): Promise<BackupFile> {
         }
 
         resolve(backup)
-      } catch (err) {
+      } catch {
         reject(new Error('Failed to parse backup file'))
       }
     }

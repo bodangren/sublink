@@ -3,10 +3,12 @@ import { NavLink, useParams, useNavigate } from 'react-router-dom'
 import { getProject, getTasksByProject, getDailyLogsByProject, getWaiversByProject, deleteProject, getExpensesByProject } from '../db'
 import type { Project, Task, DailyLog, Waiver, Expense } from '../db'
 import { formatCurrency } from '../hooks/useEditWrapper'
+import { useConfirm } from '../hooks/useConfirm'
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const confirm = useConfirm()
   const [project, setProject] = useState<Project | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
   const [logs, setLogs] = useState<DailyLog[]>([])
@@ -39,7 +41,13 @@ const ProjectDetail = () => {
 
   const handleDelete = async () => {
     if (!project) return
-    if (window.confirm('Are you sure you want to delete this project? Related items will keep their project name.')) {
+    const confirmed = await confirm({
+      title: 'Delete Project',
+      message: 'Are you sure you want to delete this project? Related items will keep their project name.',
+      confirmLabel: 'Delete',
+      variant: 'danger'
+    })
+    if (confirmed) {
       await deleteProject(project.id)
       navigate('/projects')
     }

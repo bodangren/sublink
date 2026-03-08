@@ -1,12 +1,17 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import ProjectList from './ProjectList'
 import { initDB, saveProject, getProjects, clearDatabase } from '../db'
+import { ConfirmProvider } from '../hooks/useConfirm'
 import 'fake-indexeddb/auto'
 
 const renderWithRouter = (component: React.ReactElement) => {
-  return render(<BrowserRouter>{component}</BrowserRouter>)
+  return render(
+    <BrowserRouter>
+      <ConfirmProvider>{component}</ConfirmProvider>
+    </BrowserRouter>
+  )
 }
 
 describe('ProjectList', () => {
@@ -56,9 +61,15 @@ describe('ProjectList', () => {
       expect(screen.getByText('Project to Delete')).toBeDefined()
     })
     
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     const deleteButtons = screen.getAllByText('Delete')
     fireEvent.click(deleteButtons[0])
+    
+    await waitFor(() => {
+      expect(screen.getByText('Delete Project')).toBeDefined()
+    })
+    
+    const dialog = screen.getByRole('dialog')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
     
     await waitFor(async () => {
       const remainingProjects = await getProjects()

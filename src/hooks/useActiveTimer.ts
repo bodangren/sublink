@@ -20,21 +20,22 @@ export const getStoredTimer = (): ActiveTimer | null => {
   }
 }
 
-export const useActiveTimer = () => {
-  const [activeTimer, setActiveTimer] = useState<ActiveTimer | null>(null)
-  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+const getInitialTimer = (): ActiveTimer | null => {
+  return getStoredTimer()
+}
 
-  useEffect(() => {
-    const stored = getStoredTimer()
-    if (stored) {
-      setActiveTimer(stored)
-      setElapsedSeconds(Math.floor((Date.now() - stored.startTime) / 1000))
-    }
-  }, [])
+const getInitialElapsed = (): number => {
+  const stored = getStoredTimer()
+  if (!stored) return 0
+  return Math.floor((Date.now() - stored.startTime) / 1000)
+}
+
+export const useActiveTimer = () => {
+  const [activeTimer, setActiveTimer] = useState<ActiveTimer | null>(getInitialTimer)
+  const [elapsedSeconds, setElapsedSeconds] = useState(getInitialElapsed)
 
   useEffect(() => {
     if (!activeTimer) {
-      setElapsedSeconds(0)
       return
     }
 

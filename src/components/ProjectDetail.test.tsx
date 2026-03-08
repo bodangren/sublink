@@ -6,14 +6,17 @@ import {
   initDB, saveProject, clearDatabase, 
   saveTask, saveDailyLog
 } from '../db'
+import { ConfirmProvider } from '../hooks/useConfirm'
 import 'fake-indexeddb/auto'
 
 const renderWithRouter = (component: React.ReactElement, projectId: string) => {
   return render(
     <MemoryRouter initialEntries={[`/projects/${projectId}`]}>
-      <Routes>
-        <Route path="/projects/:id" element={component} />
-      </Routes>
+      <ConfirmProvider>
+        <Routes>
+          <Route path="/projects/:id" element={component} />
+        </Routes>
+      </ConfirmProvider>
     </MemoryRouter>
   )
 }

@@ -3,10 +3,15 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import ActiveTimer from './ActiveTimer'
 import { initDB, clearDatabase, saveProject, getTimeEntries, getProjects } from '../db'
+import { ConfirmProvider } from '../hooks/useConfirm'
 import 'fake-indexeddb/auto'
 
 const renderWithRouter = (component: React.ReactElement) => {
-  return render(<BrowserRouter>{component}</BrowserRouter>)
+  return render(
+    <BrowserRouter>
+      <ConfirmProvider>{component}</ConfirmProvider>
+    </BrowserRouter>
+  )
 }
 
 describe('ActiveTimer', () => {
@@ -127,11 +132,17 @@ describe('ActiveTimer', () => {
     renderWithRouter(<ActiveTimer />)
     
     await waitFor(() => {
-      expect(screen.getByText(/discard timer/i)).toBeDefined()
+      expect(screen.getByRole('button', { name: /discard timer/i })).toBeDefined()
     })
     
-    window.confirm = () => true
-    fireEvent.click(screen.getByText(/discard timer/i))
+    fireEvent.click(screen.getByRole('button', { name: /discard timer/i }))
+    
+    await waitFor(() => {
+      expect(screen.getByText('Discard this timer? Time will not be saved.')).toBeDefined()
+    })
+    
+    const confirmButtons = screen.getAllByRole('button', { name: 'Discard' })
+    fireEvent.click(confirmButtons[confirmButtons.length - 1])
     
     await waitFor(() => {
       expect(localStorage.getItem('sublink-active-timer')).toBeNull()

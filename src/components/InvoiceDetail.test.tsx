@@ -1,9 +1,22 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import InvoiceDetail from './InvoiceDetail'
 import { initDB, clearDatabase, saveInvoice, getInvoice } from '../db'
+import { ConfirmProvider } from '../hooks/useConfirm'
 import 'fake-indexeddb/auto'
+
+const renderWithRouter = (id: string) => {
+  return render(
+    <MemoryRouter initialEntries={[`/invoices/${id}`]}>
+      <ConfirmProvider>
+        <Routes>
+          <Route path="/invoices/:id" element={<InvoiceDetail />} />
+        </Routes>
+      </ConfirmProvider>
+    </MemoryRouter>
+  )
+}
 
 describe('InvoiceDetail', () => {
   beforeEach(async () => {
@@ -12,25 +25,13 @@ describe('InvoiceDetail', () => {
   })
 
   it('shows loading initially', () => {
-    render(
-      <MemoryRouter initialEntries={['/invoices/test-id']}>
-        <Routes>
-          <Route path="/invoices/:id" element={<InvoiceDetail />} />
-        </Routes>
-      </MemoryRouter>
-    )
+    renderWithRouter('test-id')
     
     expect(screen.getByText(/loading/i)).toBeDefined()
   })
 
   it('shows not found when invoice does not exist', async () => {
-    render(
-      <MemoryRouter initialEntries={['/invoices/nonexistent-id']}>
-        <Routes>
-          <Route path="/invoices/:id" element={<InvoiceDetail />} />
-        </Routes>
-      </MemoryRouter>
-    )
+    renderWithRouter('nonexistent-id')
     
     await waitFor(() => {
       expect(screen.getByText(/not found/i)).toBeDefined()
@@ -58,13 +59,7 @@ describe('InvoiceDetail', () => {
       status: 'pending'
     })
 
-    render(
-      <MemoryRouter initialEntries={[`/invoices/${result.id}`]}>
-        <Routes>
-          <Route path="/invoices/:id" element={<InvoiceDetail />} />
-        </Routes>
-      </MemoryRouter>
-    )
+    renderWithRouter(result.id)
     
     await waitFor(() => {
       expect(screen.getByText(result.invoiceNumber)).toBeDefined()
@@ -74,8 +69,6 @@ describe('InvoiceDetail', () => {
   })
 
   it('marks invoice as paid', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
-    
     const result = await saveInvoice({
       clientName: 'Payable Client',
       issueDate: '2026-03-08',
@@ -88,25 +81,25 @@ describe('InvoiceDetail', () => {
       status: 'pending'
     })
 
-    render(
-      <MemoryRouter initialEntries={[`/invoices/${result.id}`]}>
-        <Routes>
-          <Route path="/invoices/:id" element={<InvoiceDetail />} />
-        </Routes>
-      </MemoryRouter>
-    )
+    renderWithRouter(result.id)
     
     await waitFor(() => {
       expect(screen.getByText('Mark as Paid')).toBeDefined()
     })
     
-    fireEvent.click(screen.getByText('Mark as Paid'))
+    const markPaidButtons = screen.getAllByRole('button', { name: 'Mark as Paid' })
+    fireEvent.click(markPaidButtons[0])
+    
+    await waitFor(() => {
+      expect(screen.getByText('Mark this invoice as paid?')).toBeDefined()
+    })
+    
+    const confirmButtons = screen.getAllByRole('button', { name: 'Mark Paid' })
+    fireEvent.click(confirmButtons[confirmButtons.length - 1])
     
     await waitFor(async () => {
       const invoice = await getInvoice(result.id)
       expect(invoice?.status).toBe('paid')
     })
-    
-    vi.restoreAllMocks()
   })
 })

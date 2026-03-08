@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { getProjects, deleteProject } from '../db'
 import type { Project } from '../db'
+import { useConfirm } from '../hooks/useConfirm'
 
 const ProjectList = () => {
   const [projects, setProjects] = useState<Project[]>([])
+  const confirm = useConfirm()
 
   useEffect(() => {
     let mounted = true
@@ -15,7 +17,13 @@ const ProjectList = () => {
   }, [])
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this project? Related items will keep their project name.')) {
+    const confirmed = await confirm({
+      title: 'Delete Project',
+      message: 'Are you sure you want to delete this project? Related items will keep their project name.',
+      confirmLabel: 'Delete',
+      variant: 'danger'
+    })
+    if (confirmed) {
       await deleteProject(id)
       const data = await getProjects()
       setProjects(data.sort((a, b) => b.updatedAt - a.updatedAt))

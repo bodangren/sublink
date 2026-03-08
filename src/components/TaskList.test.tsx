@@ -1,12 +1,17 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import TaskList from './TaskList'
 import { initDB, saveTask, getTasks, clearDatabase } from '../db'
+import { ConfirmProvider } from '../hooks/useConfirm'
 import 'fake-indexeddb/auto'
 
 const renderWithRouter = (component: React.ReactElement) => {
-  return render(<BrowserRouter>{component}</BrowserRouter>)
+  return render(
+    <BrowserRouter>
+      <ConfirmProvider>{component}</ConfirmProvider>
+    </BrowserRouter>
+  )
 }
 
 describe('TaskList', () => {
@@ -83,9 +88,15 @@ describe('TaskList', () => {
       expect(screen.getByText('Task to delete')).toBeDefined()
     })
     
-    window.confirm = () => true
     const deleteButtons = screen.getAllByRole('button', { name: /^Delete$/i })
     fireEvent.click(deleteButtons[0])
+    
+    await waitFor(() => {
+      expect(screen.getByText('Delete Task')).toBeDefined()
+    })
+    
+    const dialog = screen.getByRole('dialog')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
     
     await waitFor(async () => {
       const tasks = await getTasks()

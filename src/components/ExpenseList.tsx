@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { getExpenses, deleteExpense, getProjects } from '../db'
 import type { Expense, Project, ExpenseCategory } from '../db'
+import { useConfirm } from '../hooks/useConfirm'
 
 interface ExpenseWithProject extends Expense {
   projectName?: string
@@ -28,7 +29,7 @@ const ExpenseList = () => {
   const [projects, setProjects] = useState<Project[]>([])
   const [filterProject, setFilterProject] = useState<string>('')
   const [filterCategory, setFilterCategory] = useState<string>('')
-  const [totalAmount, setTotalAmount] = useState<number>(0)
+  const confirm = useConfirm()
 
   useEffect(() => {
     let mounted = true
@@ -51,11 +52,6 @@ const ExpenseList = () => {
     return () => { mounted = false }
   }, [])
 
-  useEffect(() => {
-    const filtered = getFilteredExpenses()
-    setTotalAmount(filtered.reduce((sum, e) => sum + e.amount, 0))
-  }, [expenses, filterProject, filterCategory])
-
   const getFilteredExpenses = () => {
     return expenses.filter(expense => {
       if (filterProject && expense.projectId !== filterProject) return false
@@ -65,7 +61,13 @@ const ExpenseList = () => {
   }
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this expense?')) {
+    const confirmed = await confirm({
+      title: 'Delete Expense',
+      message: 'Are you sure you want to delete this expense?',
+      confirmLabel: 'Delete',
+      variant: 'danger'
+    })
+    if (confirmed) {
       await deleteExpense(id)
       const expenseList = await getExpenses()
       const projectMap = new Map(projects.map(p => [p.id, p.name]))
@@ -123,7 +125,7 @@ const ExpenseList = () => {
           borderRadius: '4px',
           border: '2px solid var(--accent-color)'
         }}>
-          <strong>Total: ${totalAmount.toFixed(2)}</strong>
+          <strong>Total: ${filteredExpenses.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}</strong>
           <span style={{ color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>
             ({filteredExpenses.length} expense{filteredExpenses.length !== 1 ? 's' : ''})
           </span>

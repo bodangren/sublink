@@ -1,14 +1,17 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import ExpenseList from './ExpenseList'
-import { initDB, saveExpense, getExpenses, clearDatabase, saveProject } from '../db'
+import { initDB, saveExpense, getExpenses, clearDatabase } from '../db'
+import { ConfirmProvider } from '../hooks/useConfirm'
 import 'fake-indexeddb/auto'
 
-import type { Project } from '../db'
-
 const renderWithRouter = (component: React.ReactElement) => {
-  return render(<BrowserRouter>{component}</BrowserRouter>)
+  return render(
+    <BrowserRouter>
+      <ConfirmProvider>{component}</ConfirmProvider>
+    </BrowserRouter>
+  )
 }
 
 describe('ExpenseList', () => {
@@ -56,9 +59,15 @@ describe('ExpenseList', () => {
       expect(screen.getByText('Expense to delete')).toBeDefined()
     })
     
-    window.confirm = () => true
     const deleteButtons = screen.getAllByRole('button', { name: /^Delete$/i })
     fireEvent.click(deleteButtons[0])
+    
+    await waitFor(() => {
+      expect(screen.getByText('Delete Expense')).toBeDefined()
+    })
+    
+    const dialog = screen.getByRole('dialog')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
     
     await waitFor(async () => {
       const expenses = await getExpenses()

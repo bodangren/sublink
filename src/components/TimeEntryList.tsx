@@ -3,12 +3,14 @@ import { NavLink } from 'react-router-dom'
 import { getTimeEntries, deleteTimeEntry, getProjects } from '../db'
 import type { TimeEntry, Project } from '../db'
 import { formatDuration } from '../hooks/useActiveTimer'
+import { useConfirm } from '../hooks/useConfirm'
 
 const TimeEntryList = () => {
   const [entries, setEntries] = useState<TimeEntry[]>([])
   const [projects, setProjects] = useState<Map<string, Project>>(new Map())
   const [filterProject, setFilterProject] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const confirm = useConfirm()
 
   useEffect(() => {
     let mounted = true
@@ -36,7 +38,13 @@ const TimeEntryList = () => {
   }, [])
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this time entry?')) {
+    const confirmed = await confirm({
+      title: 'Delete Time Entry',
+      message: 'Are you sure you want to delete this time entry?',
+      confirmLabel: 'Delete',
+      variant: 'danger'
+    })
+    if (confirmed) {
       await deleteTimeEntry(id)
       setEntries(entries.filter(e => e.id !== id))
     }

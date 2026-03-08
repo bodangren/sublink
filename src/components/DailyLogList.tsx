@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { getDailyLogs, deleteDailyLog } from '../db'
 import type { DailyLog } from '../db'
+import { useConfirm } from '../hooks/useConfirm'
 
 const DailyLogList = () => {
   const [logs, setLogs] = useState<DailyLog[]>([])
   const [loading, setLoading] = useState(true)
+  const confirm = useConfirm()
 
   useEffect(() => {
     let mounted = true
@@ -19,7 +21,13 @@ const DailyLogList = () => {
   }, [])
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this daily log?')) {
+    const confirmed = await confirm({
+      title: 'Delete Daily Log',
+      message: 'Are you sure you want to delete this daily log?',
+      confirmLabel: 'Delete',
+      variant: 'danger'
+    })
+    if (confirmed) {
       await deleteDailyLog(id)
       const data = await getDailyLogs()
       setLogs(data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))

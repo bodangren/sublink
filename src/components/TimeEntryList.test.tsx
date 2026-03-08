@@ -1,12 +1,17 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import TimeEntryList from './TimeEntryList'
 import { initDB, clearDatabase, saveProject, saveTimeEntry, getProjects } from '../db'
+import { ConfirmProvider } from '../hooks/useConfirm'
 import 'fake-indexeddb/auto'
 
 const renderWithRouter = (component: React.ReactElement) => {
-  return render(<BrowserRouter>{component}</BrowserRouter>)
+  return render(
+    <BrowserRouter>
+      <ConfirmProvider>{component}</ConfirmProvider>
+    </BrowserRouter>
+  )
 }
 
 describe('TimeEntryList', () => {
@@ -119,9 +124,15 @@ describe('TimeEntryList', () => {
       expect(screen.getAllByText('Test Project')).toHaveLength(2)
     })
     
-    window.confirm = () => true
     const deleteButtons = screen.getAllByText(/delete/i)
     fireEvent.click(deleteButtons[0])
+    
+    await waitFor(() => {
+      expect(screen.getByText('Delete Time Entry')).toBeDefined()
+    })
+    
+    const dialog = screen.getByRole('dialog')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
     
     await waitFor(() => {
       expect(screen.getByText(/no time entries yet/i)).toBeDefined()

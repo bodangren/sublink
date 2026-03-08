@@ -67,10 +67,10 @@ const InvoiceForm = ({ editId, initialData }: InvoiceFormProps) => {
       const project = projects.find(p => p.id === projectId)
       if (project) {
         setProjectName(project.name)
-        if (project.client && !clientName) {
+        if (project.client && !initialData?.clientName) {
           setClientName(project.client)
         }
-        if (project.address && !clientAddress) {
+        if (project.address && !initialData?.clientAddress) {
           setClientAddress(project.address)
         }
       }
@@ -78,15 +78,15 @@ const InvoiceForm = ({ editId, initialData }: InvoiceFormProps) => {
       setAvailableTimeEntries([])
       setProjectName('')
     }
-  }, [projectId])
+  }, [projectId, projects, initialData?.clientName, initialData?.clientAddress])
 
   useEffect(() => {
-    if (issueDate && !dueDate) {
+    if (issueDate && !initialData?.dueDate) {
       const due = new Date(issueDate)
       due.setDate(due.getDate() + 30)
       setDueDate(due.toISOString().split('T')[0])
     }
-  }, [issueDate])
+  }, [issueDate, initialData?.dueDate])
 
   const updateLineItem = (id: string, updates: Partial<InvoiceLineItem>) => {
     setLineItems(items =>
