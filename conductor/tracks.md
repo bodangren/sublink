@@ -28,3 +28,5 @@ This file tracks all major tracks for the project. Each track has its own detail
   *Link: [./archive/github_pages_support_20260308/](./archive/github_pages_support_20260308/)*
 - [x] **Track: Invoicing - Create and Export Professional Invoices.**
   *Link: [./archive/invoicing_20260308/](./archive/invoicing_20260308/)*
+- [x] **Track: Data Backup & Restore - Protect Offline-First Data.**
+  *Link: [./archive/data_backup_restore_20260308/](./archive/data_backup_restore_20260308/)*

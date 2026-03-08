@@ -474,3 +474,66 @@ export const markInvoicePaid = async (id: string): Promise<void> => {
     updatedAt: Date.now(),
   })
 }
+
+export const exportAllData = async () => {
+  const [projects, waivers, certificates, tasks, photos, dailyLogs, timeEntries, invoices] = await Promise.all([
+    db.getAll('projects'),
+    db.getAll('waivers'),
+    db.getAll('certificates'),
+    db.getAll('tasks'),
+    db.getAll('photos'),
+    db.getAll('dailyLogs'),
+    db.getAll('timeEntries'),
+    db.getAll('invoices'),
+  ])
+  
+  return {
+    projects,
+    waivers,
+    certificates,
+    tasks,
+    photos,
+    dailyLogs,
+    timeEntries,
+    invoices,
+  }
+}
+
+type StoreName = 'projects' | 'waivers' | 'certificates' | 'tasks' | 'photos' | 'dailyLogs' | 'timeEntries' | 'invoices'
+
+export interface RestoreData {
+  projects?: SubLinkDB['projects']['value'][]
+  waivers?: SubLinkDB['waivers']['value'][]
+  certificates?: SubLinkDB['certificates']['value'][]
+  tasks?: SubLinkDB['tasks']['value'][]
+  photos?: SubLinkDB['photos']['value'][]
+  dailyLogs?: SubLinkDB['dailyLogs']['value'][]
+  timeEntries?: SubLinkDB['timeEntries']['value'][]
+  invoices?: SubLinkDB['invoices']['value'][]
+}
+
+export const restoreData = async (data: RestoreData, mode: 'replace' | 'merge' = 'replace'): Promise<void> => {
+  if (mode === 'replace') {
+    await clearDatabase()
+  }
+  
+  const stores: StoreName[] = ['projects', 'waivers', 'certificates', 'tasks', 'photos', 'dailyLogs', 'timeEntries', 'invoices']
+  
+  for (const storeName of stores) {
+    const items = data[storeName]
+    if (items && items.length > 0) {
+      if (mode === 'merge') {
+        for (const item of items) {
+          const existing = await db.get(storeName, item.id)
+          if (!existing) {
+            await db.put(storeName, item)
+          }
+        }
+      } else {
+        for (const item of items) {
+          await db.put(storeName, item)
+        }
+      }
+    }
+  }
+}

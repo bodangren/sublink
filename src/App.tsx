@@ -24,6 +24,7 @@ import ActiveTimer from './components/ActiveTimer'
 import InvoiceList from './components/InvoiceList'
 import InvoiceForm from './components/InvoiceForm'
 import InvoiceDetail from './components/InvoiceDetail'
+import Settings from './components/Settings'
 import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLogs, getProjects, getTimeEntry, getInvoice } from './db'
 import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry, Invoice } from './db'
 import { getCOIStatus, getStatusColor, getStatusLabel } from './utils/coiStatus'
@@ -370,6 +371,7 @@ const AppShell = () => (
         <Route path="/invoices/new" element={<InvoiceForm />} />
         <Route path="/invoices/edit/:id" element={<InvoiceEditWrapper />} />
         <Route path="/invoices/:id" element={<InvoiceDetail />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </div>
     <nav className="bottom-nav">
@@ -382,11 +384,11 @@ const AppShell = () => (
       <NavLink to="/logs" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Logs</span>
       </NavLink>
-      <NavLink to="/tasking" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-        <span>Tasks</span>
-      </NavLink>
       <NavLink to="/projects" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Projects</span>
+      </NavLink>
+      <NavLink to="/settings" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+        <span>Settings</span>
       </NavLink>
     </nav>
   </div>

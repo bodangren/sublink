@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { initDB, saveTask, getTasks, getTask, updateTask, deleteTask, savePhoto, getPhotosByTask, deletePhotosByTask, clearDatabase, saveDailyLog, getDailyLogs, getDailyLog, updateDailyLog, deleteDailyLog, getDailyLogByDate, saveProject, getProjects, getProject, updateProject, deleteProject, getTasksByProject, getDailyLogsByProject, saveInvoice, getInvoices, getInvoice, updateInvoice, deleteInvoice, getNextInvoiceNumber, getUnpaidInvoices, markInvoicePaid } from './db'
+import { initDB, saveTask, getTasks, getTask, updateTask, deleteTask, savePhoto, getPhotosByTask, deletePhotosByTask, clearDatabase, saveDailyLog, getDailyLogs, getDailyLog, updateDailyLog, deleteDailyLog, getDailyLogByDate, saveProject, getProjects, getProject, updateProject, deleteProject, getTasksByProject, getDailyLogsByProject, saveInvoice, getInvoices, getInvoice, updateInvoice, deleteInvoice, getNextInvoiceNumber, getUnpaidInvoices, markInvoicePaid, exportAllData, restoreData } from './db'
 import type { InvoiceLineItem } from './db'
 import 'fake-indexeddb/auto'
 
@@ -962,6 +962,82 @@ describe('Invoice database operations', () => {
     it('throws error for non-existent invoice', async () => {
       await expect(markInvoicePaid('non-existent-id'))
         .rejects.toThrow('Invoice not found')
+    })
+  })
+})
+
+describe('Backup and Restore operations', () => {
+  beforeEach(async () => {
+    await initDB()
+    await clearDatabase()
+  })
+
+  describe('exportAllData', () => {
+    it('returns empty data when database is empty', async () => {
+      const data = await exportAllData()
+      expect(data.projects).toEqual([])
+      expect(data.waivers).toEqual([])
+      expect(data.certificates).toEqual([])
+      expect(data.tasks).toEqual([])
+      expect(data.photos).toEqual([])
+      expect(data.dailyLogs).toEqual([])
+      expect(data.timeEntries).toEqual([])
+      expect(data.invoices).toEqual([])
+    })
+
+    it('exports all data from all stores', async () => {
+      await saveProject({ name: 'Project 1' })
+      await saveTask({ title: 'Task 1', description: 'Desc' })
+      await saveDailyLog({ date: '2024-01-01', project: 'Test', weather: 'Sunny', workPerformed: 'Work', personnel: '1' })
+
+      const data = await exportAllData()
+
+      expect(data.projects.length).toBe(1)
+      expect(data.tasks.length).toBe(1)
+      expect(data.dailyLogs.length).toBe(1)
+    })
+  })
+
+  describe('restoreData', () => {
+    it('restores data in replace mode', async () => {
+      await saveProject({ name: 'Old Project' })
+      
+      const restorePayload = {
+        projects: [{ id: 'new-1', name: 'New Project', createdAt: Date.now(), updatedAt: Date.now() }],
+      }
+
+      await restoreData(restorePayload, 'replace')
+
+      const projects = await getProjects()
+      expect(projects.length).toBe(1)
+      expect(projects[0].name).toBe('New Project')
+    })
+
+    it('merges data in merge mode', async () => {
+      await saveProject({ name: 'Existing Project' })
+      
+      const restorePayload = {
+        projects: [{ id: 'new-1', name: 'New Project', createdAt: Date.now(), updatedAt: Date.now() }],
+      }
+
+      await restoreData(restorePayload, 'merge')
+
+      const projects = await getProjects()
+      expect(projects.length).toBe(2)
+    })
+
+    it('skips duplicates in merge mode', async () => {
+      const existingId = await saveProject({ name: 'Existing Project' })
+      
+      const restorePayload = {
+        projects: [{ id: existingId, name: 'Updated Name', createdAt: Date.now(), updatedAt: Date.now() }],
+      }
+
+      await restoreData(restorePayload, 'merge')
+
+      const projects = await getProjects()
+      expect(projects.length).toBe(1)
+      expect(projects[0].name).toBe('Existing Project')
     })
   })
 })
