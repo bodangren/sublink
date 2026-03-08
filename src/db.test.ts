@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { initDB, saveTask, getTasks, getTask, updateTask, deleteTask, savePhoto, getPhotosByTask, deletePhotosByTask, clearDatabase, saveDailyLog, getDailyLogs, getDailyLog, updateDailyLog, deleteDailyLog, getDailyLogByDate, saveProject, getProjects, getProject, updateProject, deleteProject, getTasksByProject, getDailyLogsByProject, saveInvoice, getInvoices, getInvoice, updateInvoice, deleteInvoice, getNextInvoiceNumber, getUnpaidInvoices, markInvoicePaid, exportAllData, restoreData } from './db'
+import { initDB, saveTask, getTasks, getTask, updateTask, deleteTask, savePhoto, getPhotosByTask, deletePhotosByTask, clearDatabase, saveDailyLog, getDailyLogs, getDailyLog, updateDailyLog, deleteDailyLog, getDailyLogByDate, saveProject, getProjects, getProject, updateProject, deleteProject, getTasksByProject, getDailyLogsByProject, saveInvoice, getInvoices, getInvoice, updateInvoice, deleteInvoice, getNextInvoiceNumber, getUnpaidInvoices, markInvoicePaid, exportAllData, restoreData, saveExpense, getExpenses, getExpense, updateExpense, deleteExpense, getExpensesByProject, getExpensesByInvoice, getBillableExpenses, linkExpenseToInvoice, getTotalExpensesByProject } from './db'
 import type { InvoiceLineItem } from './db'
 import 'fake-indexeddb/auto'
 
@@ -966,6 +966,212 @@ describe('Invoice database operations', () => {
   })
 })
 
+describe('Expense database operations', () => {
+  beforeEach(async () => {
+    await initDB()
+    await clearDatabase()
+  })
+
+  describe('saveExpense', () => {
+    it('saves a new expense and returns its id', async () => {
+      const id = await saveExpense({
+        description: 'Lumber purchase',
+        category: 'materials',
+        amount: 150.00,
+        date: '2024-01-15',
+        billable: true
+      })
+
+      expect(id).toBeDefined()
+      expect(typeof id).toBe('string')
+    })
+
+    it('saves expense with all optional fields', async () => {
+      const projectId = await saveProject({ name: 'Test Project' })
+      const id = await saveExpense({
+        projectId,
+        description: 'Equipment rental',
+        category: 'equipment_rental',
+        amount: 500.00,
+        vendor: 'Rental Co',
+        date: '2024-01-15',
+        billable: true,
+        notes: 'Weekly rate'
+      })
+
+      const expense = await getExpense(id)
+      expect(expense?.projectId).toBe(projectId)
+      expect(expense?.vendor).toBe('Rental Co')
+      expect(expense?.notes).toBe('Weekly rate')
+    })
+  })
+
+  describe('getExpenses', () => {
+    it('returns empty array when no expenses exist', async () => {
+      const expenses = await getExpenses()
+      expect(expenses).toEqual([])
+    })
+
+    it('returns all saved expenses', async () => {
+      await saveExpense({ description: 'Expense 1', category: 'materials', amount: 100, date: '2024-01-01', billable: false })
+      await saveExpense({ description: 'Expense 2', category: 'fuel', amount: 50, date: '2024-01-02', billable: true })
+
+      const expenses = await getExpenses()
+      expect(expenses.length).toBe(2)
+    })
+  })
+
+  describe('getExpense', () => {
+    it('returns undefined for non-existent expense', async () => {
+      const expense = await getExpense('non-existent-id')
+      expect(expense).toBeUndefined()
+    })
+
+    it('returns the specific expense by id', async () => {
+      const id = await saveExpense({
+        description: 'Test Expense',
+        category: 'materials',
+        amount: 200,
+        date: '2024-01-15',
+        billable: true
+      })
+
+      const expense = await getExpense(id)
+      expect(expense).toBeDefined()
+      expect(expense?.id).toBe(id)
+      expect(expense?.description).toBe('Test Expense')
+    })
+  })
+
+  describe('updateExpense', () => {
+    it('updates an existing expense', async () => {
+      const id = await saveExpense({
+        description: 'Original',
+        category: 'materials',
+        amount: 100,
+        date: '2024-01-01',
+        billable: false
+      })
+
+      await updateExpense(id, { description: 'Updated', amount: 150 })
+
+      const expense = await getExpense(id)
+      expect(expense?.description).toBe('Updated')
+      expect(expense?.amount).toBe(150)
+    })
+
+    it('throws error for non-existent expense', async () => {
+      await expect(updateExpense('non-existent-id', { description: 'Test' }))
+        .rejects.toThrow('Expense not found')
+    })
+  })
+
+  describe('deleteExpense', () => {
+    it('deletes an existing expense', async () => {
+      const id = await saveExpense({
+        description: 'To Delete',
+        category: 'other',
+        amount: 50,
+        date: '2024-01-01',
+        billable: false
+      })
+
+      await deleteExpense(id)
+
+      const expense = await getExpense(id)
+      expect(expense).toBeUndefined()
+    })
+  })
+
+  describe('getExpensesByProject', () => {
+    it('returns expenses filtered by project', async () => {
+      const projectId = await saveProject({ name: 'Project A' })
+      await saveExpense({ projectId, description: 'Expense A', category: 'materials', amount: 100, date: '2024-01-01', billable: false })
+      await saveExpense({ description: 'Expense B', category: 'materials', amount: 100, date: '2024-01-01', billable: false })
+
+      const expenses = await getExpensesByProject(projectId)
+      expect(expenses.length).toBe(1)
+      expect(expenses[0].description).toBe('Expense A')
+    })
+  })
+
+  describe('getExpensesByInvoice', () => {
+    it('returns expenses linked to an invoice', async () => {
+      await saveExpense({
+        description: 'Billed Expense',
+        category: 'materials',
+        amount: 100,
+        date: '2024-01-01',
+        billable: true,
+        invoiceId: 'inv-123'
+      })
+      await saveExpense({
+        description: 'Unbilled Expense',
+        category: 'materials',
+        amount: 100,
+        date: '2024-01-01',
+        billable: true
+      })
+
+      const expenses = await getExpensesByInvoice('inv-123')
+      expect(expenses.length).toBe(1)
+      expect(expenses[0].description).toBe('Billed Expense')
+    })
+  })
+
+  describe('getBillableExpenses', () => {
+    it('returns only unbilled billable expenses', async () => {
+      await saveExpense({ description: 'Billable', category: 'materials', amount: 100, date: '2024-01-01', billable: true })
+      await saveExpense({ description: 'Non-billable', category: 'materials', amount: 100, date: '2024-01-01', billable: false })
+      await saveExpense({ description: 'Already billed', category: 'materials', amount: 100, date: '2024-01-01', billable: true, invoiceId: 'inv-1' })
+
+      const expenses = await getBillableExpenses()
+      expect(expenses.length).toBe(1)
+      expect(expenses[0].description).toBe('Billable')
+    })
+  })
+
+  describe('linkExpenseToInvoice', () => {
+    it('links expense to invoice', async () => {
+      const id = await saveExpense({
+        description: 'Test',
+        category: 'materials',
+        amount: 100,
+        date: '2024-01-01',
+        billable: true
+      })
+
+      await linkExpenseToInvoice(id, 'inv-456')
+
+      const expense = await getExpense(id)
+      expect(expense?.invoiceId).toBe('inv-456')
+    })
+
+    it('throws error for non-existent expense', async () => {
+      await expect(linkExpenseToInvoice('non-existent', 'inv-1'))
+        .rejects.toThrow('Expense not found')
+    })
+  })
+
+  describe('getTotalExpensesByProject', () => {
+    it('returns total of all expenses for a project', async () => {
+      const projectId = await saveProject({ name: 'Project' })
+      await saveExpense({ projectId, description: 'E1', category: 'materials', amount: 100, date: '2024-01-01', billable: false })
+      await saveExpense({ projectId, description: 'E2', category: 'materials', amount: 200, date: '2024-01-01', billable: false })
+      await saveExpense({ description: 'Other', category: 'materials', amount: 500, date: '2024-01-01', billable: false })
+
+      const total = await getTotalExpensesByProject(projectId)
+      expect(total).toBe(300)
+    })
+
+    it('returns 0 for project with no expenses', async () => {
+      const projectId = await saveProject({ name: 'Empty Project' })
+      const total = await getTotalExpensesByProject(projectId)
+      expect(total).toBe(0)
+    })
+  })
+})
+
 describe('Backup and Restore operations', () => {
   beforeEach(async () => {
     await initDB()
@@ -983,18 +1189,21 @@ describe('Backup and Restore operations', () => {
       expect(data.dailyLogs).toEqual([])
       expect(data.timeEntries).toEqual([])
       expect(data.invoices).toEqual([])
+      expect(data.expenses).toEqual([])
     })
 
     it('exports all data from all stores', async () => {
       await saveProject({ name: 'Project 1' })
       await saveTask({ title: 'Task 1', description: 'Desc' })
       await saveDailyLog({ date: '2024-01-01', project: 'Test', weather: 'Sunny', workPerformed: 'Work', personnel: '1' })
+      await saveExpense({ description: 'Expense 1', category: 'materials', amount: 100, date: '2024-01-01', billable: false })
 
       const data = await exportAllData()
 
       expect(data.projects.length).toBe(1)
       expect(data.tasks.length).toBe(1)
       expect(data.dailyLogs.length).toBe(1)
+      expect(data.expenses.length).toBe(1)
     })
   })
 

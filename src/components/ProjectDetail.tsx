@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useParams, useNavigate } from 'react-router-dom'
-import { getProject, getTasksByProject, getDailyLogsByProject, getWaiversByProject, deleteProject } from '../db'
-import type { Project, Task, DailyLog, Waiver } from '../db'
+import { getProject, getTasksByProject, getDailyLogsByProject, getWaiversByProject, deleteProject, getExpensesByProject } from '../db'
+import type { Project, Task, DailyLog, Waiver, Expense } from '../db'
 import { formatCurrency } from '../hooks/useEditWrapper'
 
 const ProjectDetail = () => {
@@ -11,6 +11,7 @@ const ProjectDetail = () => {
   const [tasks, setTasks] = useState<Task[]>([])
   const [logs, setLogs] = useState<DailyLog[]>([])
   const [waivers, setWaivers] = useState<Waiver[]>([])
+  const [expenses, setExpenses] = useState<Expense[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -21,13 +22,15 @@ const ProjectDetail = () => {
       getProject(id),
       getTasksByProject(id),
       getDailyLogsByProject(id),
-      getWaiversByProject(id)
-    ]).then(([proj, taskList, logList, waiverList]) => {
+      getWaiversByProject(id),
+      getExpensesByProject(id)
+    ]).then(([proj, taskList, logList, waiverList, expenseList]) => {
       if (mounted) {
         setProject(proj || null)
         setTasks(taskList.sort((a, b) => b.updatedAt - a.updatedAt))
-        setLogs(logList.sort((a, b) => b.date.localeCompare(a.date)).reverse())
+        setLogs(logList.sort((a, b) => b.date.localeCompare(a.date)))
         setWaivers(waiverList.sort((a, b) => b.createdAt - a.createdAt))
+        setExpenses(expenseList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
         setLoading(false)
       }
     })
@@ -148,6 +151,9 @@ const ProjectDetail = () => {
           <NavLink to={`/waivers/new?projectId=${project.id}`}>
             <button style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}>+ Waiver</button>
           </NavLink>
+          <NavLink to={`/expenses/new?projectId=${project.id}`}>
+            <button style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}>+ Expense</button>
+          </NavLink>
           <NavLink to={`/projects/edit/${project.id}`}>
             <button style={{ fontSize: '0.875rem', padding: '0.5rem 1rem', backgroundColor: '#6c757d', color: '#fff' }}>Edit</button>
           </NavLink>
@@ -196,7 +202,47 @@ const ProjectDetail = () => {
           <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--accent-color)' }}>{waivers.length}</div>
           <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Waivers</div>
         </div>
+        <div style={{ 
+          backgroundColor: 'var(--secondary-bg)', 
+          padding: '1rem', 
+          borderRadius: '4px',
+          textAlign: 'center',
+          border: '1px solid var(--border-color)'
+        }}>
+          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--accent-color)' }}>${expenses.reduce((sum, e) => sum + e.amount, 0).toFixed(0)}</div>
+          <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Expenses</div>
+        </div>
       </div>
+
+      {expenses.length > 0 && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <h2 style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>Recent Expenses</h2>
+          <ul style={{ listStyle: 'none', padding: 0 }}>
+            {expenses.slice(0, 5).map(expense => (
+              <li key={expense.id} style={{ 
+                backgroundColor: 'var(--secondary-bg)', 
+                padding: '0.75rem', 
+                marginBottom: '0.5rem',
+                border: '1px solid var(--border-color)',
+                borderRadius: '4px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div>
+                  <NavLink to={`/expenses/${expense.id}`} style={{ fontWeight: 'bold' }}>
+                    {expense.description}
+                  </NavLink>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                    {new Date(expense.date).toLocaleDateString()} - {expense.category}
+                  </div>
+                </div>
+                <div style={{ fontWeight: 'bold' }}>${expense.amount.toFixed(2)}</div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {logs.length > 0 && (
         <div style={{ marginBottom: '1.5rem' }}>
@@ -270,10 +316,10 @@ const ProjectDetail = () => {
         </div>
       )}
 
-      {tasks.length === 0 && logs.length === 0 && waivers.length === 0 && (
+      {tasks.length === 0 && logs.length === 0 && waivers.length === 0 && expenses.length === 0 && (
         <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
           <p>No activity yet for this project.</p>
-          <p>Use the buttons above to add daily logs, tasks, or waivers.</p>
+          <p>Use the buttons above to add daily logs, tasks, expenses, or waivers.</p>
         </div>
       )}
     </div>

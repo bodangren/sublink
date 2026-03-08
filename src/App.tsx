@@ -14,6 +14,7 @@ import DashboardStats from './components/DashboardStats'
 import ExpiringCOIs from './components/ExpiringCOIs'
 import RecentTasks from './components/RecentTasks'
 import RecentWaivers from './components/RecentWaivers'
+import RecentInvoices from './components/RecentInvoices'
 import ProjectList from './components/ProjectList'
 import ProjectForm from './components/ProjectForm'
 import ProjectDetail from './components/ProjectDetail'
@@ -24,9 +25,13 @@ import ActiveTimer from './components/ActiveTimer'
 import InvoiceList from './components/InvoiceList'
 import InvoiceForm from './components/InvoiceForm'
 import InvoiceDetail from './components/InvoiceDetail'
+import ExpenseForm from './components/ExpenseForm'
+import ExpenseList from './components/ExpenseList'
+import ExpenseDetail from './components/ExpenseDetail'
+import RecentExpenses from './components/RecentExpenses'
 import Settings from './components/Settings'
-import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLogs, getProjects, getTimeEntry, getInvoice } from './db'
-import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry, Invoice } from './db'
+import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLogs, getProjects, getTimeEntry, getInvoice, getExpense } from './db'
+import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry, Invoice, Expense } from './db'
 import { getCOIStatus, getStatusColor, getStatusLabel } from './utils/coiStatus'
 import { useItemId, useTaskIdFromPath, useEditItem, formatCurrency } from './hooks/useEditWrapper'
 
@@ -42,6 +47,8 @@ const Home = () => {
       <ExpiringCOIs />
       <RecentTasks />
       <RecentWaivers />
+      <RecentExpenses />
+      <RecentInvoices />
       <div style={{ marginTop: '2rem' }}>
         <NavLink to="/logs/new">
           <button>New Daily Log</button>
@@ -51,6 +58,9 @@ const Home = () => {
         </NavLink>
         <NavLink to="/waivers/new">
           <button style={{ marginTop: '0.5rem' }}>New Lien Waiver</button>
+        </NavLink>
+        <NavLink to="/expenses/new">
+          <button style={{ marginTop: '0.5rem' }}>New Expense</button>
         </NavLink>
         <NavLink to="/compliance/new">
           <button style={{ marginTop: '0.5rem' }}>Add Certificate</button>
@@ -342,6 +352,43 @@ const InvoiceEditWrapper = () => {
   }} />
 }
 
+const ExpenseDetailWrapper = () => {
+  const id = useItemId() || ''
+  return <ExpenseDetail expenseId={id} />
+}
+
+const ExpenseEditWrapper = () => {
+  const id = useItemId() || ''
+  const [expense, setExpense] = useState<Expense | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    getExpense(id).then(data => {
+      if (mounted) {
+        setExpense(data || null)
+        setLoading(false)
+      }
+    })
+    return () => { mounted = false }
+  }, [id])
+
+  if (loading) return <div className="container"><p>Loading...</p></div>
+  if (!expense) return <div className="container"><p>Expense not found.</p></div>
+
+  return <ExpenseForm editId={id} initialData={{
+    projectId: expense.projectId || '',
+    taskId: expense.taskId || '',
+    description: expense.description,
+    category: expense.category,
+    amount: expense.amount.toString(),
+    vendor: expense.vendor || '',
+    date: expense.date,
+    billable: expense.billable,
+    notes: expense.notes || ''
+  }} />
+}
+
 const AppShell = () => (
   <div className="app-shell">
     <div className="content">
@@ -371,6 +418,10 @@ const AppShell = () => (
         <Route path="/invoices/new" element={<InvoiceForm />} />
         <Route path="/invoices/edit/:id" element={<InvoiceEditWrapper />} />
         <Route path="/invoices/:id" element={<InvoiceDetail />} />
+        <Route path="/expenses" element={<ExpenseList />} />
+        <Route path="/expenses/new" element={<ExpenseForm />} />
+        <Route path="/expenses/edit/:id" element={<ExpenseEditWrapper />} />
+        <Route path="/expenses/:id" element={<ExpenseDetailWrapper />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
     </div>
