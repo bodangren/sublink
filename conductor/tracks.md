@@ -23,6 +23,4 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [x] **Track: Project Management - Organize Work by Project.**
   *Link: [./archive/project_management_20260308/](./archive/project_management_20260308/)*
 - [x] **Track: Time Tracker - Track billable hours.**
-  *Link: [./archive/time_tracker_20260308/](./archive/time_tracker_20260308/)
-- [x] **Track: Time Tracker - Track billable hours.**
   *Link: [./archive/time_tracker_20260308/](./archive/time_tracker_20260308/)*
