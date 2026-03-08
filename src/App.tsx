@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
+import { BrowserRouter, HashRouter, Routes, Route, NavLink } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import './index.css'
 import WaiverForm from './components/WaiverForm'
@@ -349,8 +349,16 @@ const AppShell = () => (
 )
 
 function App() {
+  if (import.meta.env.VITE_ROUTER_MODE === 'hash') {
+    return (
+      <HashRouter>
+        <AppShell />
+      </HashRouter>
+    )
+  }
+
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <AppShell />
     </BrowserRouter>
   )

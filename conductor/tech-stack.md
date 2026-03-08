@@ -19,5 +19,5 @@
 
 ## Tools & Infrastructure
 - **Testing:** Vitest for unit/integration testing.
-- **Deployment:** Cloud Run (Dockerized) for the backend API.
+- **Deployment:** GitHub Pages for the static frontend build, with GitHub Actions for CI and deployment automation. Cloud Run remains the future backend/API target.
 - **Storage:** GCS (Google Cloud Storage) for photo artifacts (when synced).

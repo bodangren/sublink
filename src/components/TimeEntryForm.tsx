@@ -121,7 +121,7 @@ const TimeEntryForm = ({ editId, initialData }: TimeEntryFormProps) => {
     <div className="container">
       <h1>{editId ? 'Edit Time Entry' : 'Add Time Entry'}</h1>
 
-      <form onSubmit={handleSubmit} style={{ marginTop: '1.5rem' }}>
+      <form aria-label="time entry form" onSubmit={handleSubmit} style={{ marginTop: '1.5rem' }}>
         {error && (
           <div style={{
             backgroundColor: '#dc3545',

@@ -28,7 +28,7 @@ describe('TimeEntryForm', () => {
     renderWithRouter(<TimeEntryForm />)
     
     await act(async () => {
-      fireEvent.click(screen.getByText(/save entry/i))
+      fireEvent.submit(screen.getByRole('form', { name: /time entry form/i }))
     })
     
     expect(screen.getByText(/please select a project/i)).toBeDefined()
@@ -96,8 +96,10 @@ describe('TimeEntryForm', () => {
       fireEvent.change(screen.getByLabelText(/notes/i), {
         target: { value: 'Working on plumbing' }
       })
-      
-      fireEvent.click(screen.getByText(/save entry/i))
+    })
+
+    await act(async () => {
+      fireEvent.submit(screen.getByRole('form', { name: /time entry form/i }))
     })
     
     await waitFor(async () => {

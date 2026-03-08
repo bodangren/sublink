@@ -1,1 +1,18 @@
-# Project Context\n\n## Definition\n- [Product Definition](./product.md)\n- [Product Guidelines](./product-guidelines.md)\n- [Tech Stack](./tech-stack.md)\n\n## Workflow\n- [Workflow](./workflow.md)\n- [Code Style Guides](./code_styleguides/)\n\n## Management\n- [Tracks Registry](./tracks.md)\n- [Tracks Directory](./tracks/)
+# Project Context
+
+## Definition
+- [Product Definition](./product.md)
+- [Product Guidelines](./product-guidelines.md)
+- [Tech Stack](./tech-stack.md)
+
+## Workflow
+- [Workflow](./workflow.md)
+- [Code Style Guides](./code_styleguides/)
+
+## Management
+- [Tracks Registry](./tracks.md)
+- [Tracks Directory](./tracks/)
+
+## Deployment
+- [CI Workflow](../.github/workflows/ci.yml)
+- [GitHub Pages Workflow](../.github/workflows/deploy-pages.yml)

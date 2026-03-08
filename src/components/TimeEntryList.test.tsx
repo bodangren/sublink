@@ -38,7 +38,7 @@ describe('TimeEntryList', () => {
     renderWithRouter(<TimeEntryList />)
     
     await waitFor(() => {
-      expect(screen.getByText('Test Project')).toBeDefined()
+      expect(screen.getAllByText('Test Project')).toHaveLength(2)
     })
   })
 
@@ -65,16 +65,21 @@ describe('TimeEntryList', () => {
     await saveProject({ name: 'Project A' })
     await saveProject({ name: 'Project B' })
     const projects = await getProjects()
+    const projectA = projects.find((project) => project.name === 'Project A')
+    const projectB = projects.find((project) => project.name === 'Project B')
+
+    expect(projectA).toBeDefined()
+    expect(projectB).toBeDefined()
     
     const now = Date.now()
     await saveTimeEntry({
-      projectId: projects[0].id,
+      projectId: projectA!.id,
       startTime: now - 3600000,
       endTime: now,
       duration: 3600,
     })
     await saveTimeEntry({
-      projectId: projects[1].id,
+      projectId: projectB!.id,
       startTime: now - 7200000,
       endTime: now - 3600000,
       duration: 3600,
@@ -83,16 +88,16 @@ describe('TimeEntryList', () => {
     renderWithRouter(<TimeEntryList />)
     
     await waitFor(() => {
-      expect(screen.getByText('Project A')).toBeDefined()
-      expect(screen.getByText('Project B')).toBeDefined()
+      expect(screen.getAllByText('Project A')).toHaveLength(2)
+      expect(screen.getAllByText('Project B')).toHaveLength(2)
     })
     
     const select = screen.getByRole('combobox')
-    fireEvent.change(select, { target: { value: projects[0].id } })
+    fireEvent.change(select, { target: { value: projectA!.id } })
     
     await waitFor(() => {
-      expect(screen.getByText('Project A')).toBeDefined()
-      expect(screen.queryByText('Project B')).toBeNull()
+      expect(screen.getAllByText('Project A')).toHaveLength(2)
+      expect(screen.queryAllByText('Project B')).toHaveLength(1)
     })
   })
 
@@ -111,7 +116,7 @@ describe('TimeEntryList', () => {
     renderWithRouter(<TimeEntryList />)
     
     await waitFor(() => {
-      expect(screen.getByText('Test Project')).toBeDefined()
+      expect(screen.getAllByText('Test Project')).toHaveLength(2)
     })
     
     window.confirm = () => true

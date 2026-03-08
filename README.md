@@ -17,7 +17,7 @@ SubLink is a local-first mobile Progressive Web App (PWA) designed for subcontra
 ### Tech Stack
 - **Frontend:** React 19, TypeScript, Vite.
 - **PWA:** `vite-plugin-pwa`.
-- **Database:** IndexedDB (client) / SQLite (server).
+- **Database:** IndexedDB in the browser for local-first storage. A future server-side SQLite sync layer is not required for the static GitHub Pages deployment.
 - **Styling:** Vanilla CSS (High-Contrast "Rugged" Theme).
 
 ### Development
@@ -28,4 +28,19 @@ npm run dev
 ```
 
 ### Deployment
-The app is designed to be deployed as a PWA and a Dockerized Node.js backend on Cloud Run.
+The app can now be deployed as a static frontend on GitHub Pages through GitHub Actions.
+
+GitHub Pages notes:
+- The deployed app remains usable because SubLink stores its data in browser IndexedDB.
+- Data stays local to each browser/device. There is no shared backend or cross-device sync in the GitHub Pages deployment.
+- Routes use hash-based URLs in the Pages build so deep links and refreshes work from the repository subpath.
+
+Relevant commands:
+```bash
+npm run build
+npm run build:pages
+```
+
+Relevant workflows:
+- `.github/workflows/ci.yml`
+- `.github/workflows/deploy-pages.yml`

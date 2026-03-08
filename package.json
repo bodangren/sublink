@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:pages": "export VITE_DEPLOY_TARGET=github-pages VITE_ROUTER_MODE=hash VITE_BASE_PATH=\"/${npm_package_name}/\" && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
