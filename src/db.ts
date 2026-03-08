@@ -1,6 +1,16 @@
 import { openDB } from 'idb'
 import type { DBSchema, IDBPDatabase } from 'idb'
 
+export interface InvoiceLineItem {
+  id: string
+  type: 'time' | 'custom'
+  description: string
+  quantity: number
+  rate: number
+  amount: number
+  timeEntryId?: string
+}
+
 export interface SubLinkDB extends DBSchema {
   projects: {
     key: string
@@ -102,6 +112,31 @@ export interface SubLinkDB extends DBSchema {
     }
     indexes: { 'by-project': string, 'by-date': string }
   }
+  invoices: {
+    key: string
+    value: {
+      id: string
+      invoiceNumber: string
+      projectId?: string
+      projectName?: string
+      clientName: string
+      clientEmail?: string
+      clientAddress?: string
+      issueDate: string
+      dueDate: string
+      lineItems: InvoiceLineItem[]
+      subtotal: number
+      taxRate: number
+      taxAmount: number
+      total: number
+      notes?: string
+      status: 'draft' | 'pending' | 'paid' | 'overdue'
+      paidAt?: number
+      createdAt: number
+      updatedAt: number
+    }
+    indexes: { 'by-status': string, 'by-project': string }
+  }
 }
 
 export type Project = SubLinkDB['projects']['value']
@@ -111,11 +146,12 @@ export type Task = SubLinkDB['tasks']['value']
 export type TaskPhoto = SubLinkDB['photos']['value']
 export type DailyLog = SubLinkDB['dailyLogs']['value']
 export type TimeEntry = SubLinkDB['timeEntries']['value']
+export type Invoice = SubLinkDB['invoices']['value']
 
 let db: IDBPDatabase<SubLinkDB>
 
 export const initDB = async () => {
-  db = await openDB<SubLinkDB>('sublink-db', 6, {
+  db = await openDB<SubLinkDB>('sublink-db', 7, {
     upgrade(db, oldVersion) {
       if (oldVersion < 1) {
         db.createObjectStore('waivers', {
@@ -152,6 +188,13 @@ export const initDB = async () => {
         })
         timeStore.createIndex('by-project', 'projectId')
         timeStore.createIndex('by-date', 'startTime')
+      }
+      if (oldVersion < 7) {
+        const invoiceStore = db.createObjectStore('invoices', {
+          keyPath: 'id',
+        })
+        invoiceStore.createIndex('by-status', 'status')
+        invoiceStore.createIndex('by-project', 'projectId')
       }
     },
   })
@@ -245,6 +288,7 @@ export const clearDatabase = async () => {
   await db.clear('dailyLogs')
   await db.clear('projects')
   await db.clear('timeEntries')
+  await db.clear('invoices')
 }
 
 export const saveProject = async (project: Omit<SubLinkDB['projects']['value'], 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -359,4 +403,74 @@ export const getTodaysTimeEntries = async () => {
 export const getTotalDurationToday = async () => {
   const entries = await getTodaysTimeEntries()
   return entries.reduce((total, entry) => total + entry.duration, 0)
+}
+
+export const getNextInvoiceNumber = async (): Promise<string> => {
+  const invoices = await db.getAll('invoices')
+  if (invoices.length === 0) {
+    return 'INV-001'
+  }
+  const numbers = invoices
+    .map(inv => {
+      const match = inv.invoiceNumber.match(/INV-(\d+)/)
+      return match ? parseInt(match[1], 10) : 0
+    })
+    .filter(n => !isNaN(n))
+  const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0
+  return `INV-${String(maxNum + 1).padStart(3, '0')}`
+}
+
+export const saveInvoice = async (
+  invoice: Omit<SubLinkDB['invoices']['value'], 'id' | 'invoiceNumber' | 'createdAt' | 'updatedAt'>
+): Promise<{ id: string; invoiceNumber: string }> => {
+  const id = crypto.randomUUID()
+  const invoiceNumber = await getNextInvoiceNumber()
+  const now = Date.now()
+  await db.put('invoices', { ...invoice, id, invoiceNumber, createdAt: now, updatedAt: now })
+  return { id, invoiceNumber }
+}
+
+export const getInvoices = async (): Promise<Invoice[]> => {
+  return await db.getAll('invoices')
+}
+
+export const getInvoice = async (id: string): Promise<Invoice | undefined> => {
+  return await db.get('invoices', id)
+}
+
+export const updateInvoice = async (
+  id: string,
+  updates: Partial<Omit<SubLinkDB['invoices']['value'], 'id' | 'invoiceNumber' | 'createdAt'>>
+): Promise<void> => {
+  const existing = await db.get('invoices', id)
+  if (!existing) throw new Error('Invoice not found')
+  await db.put('invoices', { ...existing, ...updates, updatedAt: Date.now() })
+}
+
+export const deleteInvoice = async (id: string): Promise<void> => {
+  await db.delete('invoices', id)
+}
+
+export const getInvoicesByStatus = async (status: Invoice['status']): Promise<Invoice[]> => {
+  return await db.getAllFromIndex('invoices', 'by-status', status)
+}
+
+export const getInvoicesByProject = async (projectId: string): Promise<Invoice[]> => {
+  return await db.getAllFromIndex('invoices', 'by-project', projectId)
+}
+
+export const getUnpaidInvoices = async (): Promise<Invoice[]> => {
+  const invoices = await db.getAll('invoices')
+  return invoices.filter(inv => inv.status === 'pending' || inv.status === 'overdue')
+}
+
+export const markInvoicePaid = async (id: string): Promise<void> => {
+  const existing = await db.get('invoices', id)
+  if (!existing) throw new Error('Invoice not found')
+  await db.put('invoices', {
+    ...existing,
+    status: 'paid',
+    paidAt: Date.now(),
+    updatedAt: Date.now(),
+  })
 }

@@ -21,8 +21,11 @@ import TimeEntryList from './components/TimeEntryList'
 import TimeEntryForm from './components/TimeEntryForm'
 import TimeSummary from './components/TimeSummary'
 import ActiveTimer from './components/ActiveTimer'
-import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLogs, getProjects, getTimeEntry } from './db'
-import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry } from './db'
+import InvoiceList from './components/InvoiceList'
+import InvoiceForm from './components/InvoiceForm'
+import InvoiceDetail from './components/InvoiceDetail'
+import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLogs, getProjects, getTimeEntry, getInvoice } from './db'
+import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry, Invoice } from './db'
 import { getCOIStatus, getStatusColor, getStatusLabel } from './utils/coiStatus'
 import { useItemId, useTaskIdFromPath, useEditItem, formatCurrency } from './hooks/useEditWrapper'
 
@@ -301,6 +304,43 @@ const TimeEntryEditWrapper = () => {
   }} />
 }
 
+const InvoiceEditWrapper = () => {
+  const id = useItemId() || ''
+  const [invoice, setInvoice] = useState<Invoice | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    getInvoice(id).then(data => {
+      if (mounted) {
+        setInvoice(data || null)
+        setLoading(false)
+      }
+    })
+    return () => { mounted = false }
+  }, [id])
+
+  if (loading) return <div className="container"><p>Loading...</p></div>
+  if (!invoice) return <div className="container"><p>Invoice not found.</p></div>
+
+  return <InvoiceForm editId={id} initialData={{
+    projectId: invoice.projectId,
+    projectName: invoice.projectName,
+    clientName: invoice.clientName,
+    clientEmail: invoice.clientEmail,
+    clientAddress: invoice.clientAddress,
+    issueDate: invoice.issueDate,
+    dueDate: invoice.dueDate,
+    lineItems: invoice.lineItems,
+    subtotal: invoice.subtotal,
+    taxRate: invoice.taxRate,
+    taxAmount: invoice.taxAmount,
+    total: invoice.total,
+    notes: invoice.notes,
+    status: invoice.status,
+  }} />
+}
+
 const AppShell = () => (
   <div className="app-shell">
     <div className="content">
@@ -326,6 +366,10 @@ const AppShell = () => (
         <Route path="/time" element={<Time />} />
         <Route path="/time/new" element={<TimeEntryForm />} />
         <Route path="/time/edit/:id" element={<TimeEntryEditWrapper />} />
+        <Route path="/invoices" element={<InvoiceList />} />
+        <Route path="/invoices/new" element={<InvoiceForm />} />
+        <Route path="/invoices/edit/:id" element={<InvoiceEditWrapper />} />
+        <Route path="/invoices/:id" element={<InvoiceDetail />} />
       </Routes>
     </div>
     <nav className="bottom-nav">

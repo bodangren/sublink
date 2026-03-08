@@ -26,3 +26,5 @@ This file tracks all major tracks for the project. Each track has its own detail
   *Link: [./archive/time_tracker_20260308/](./archive/time_tracker_20260308/)*
 - [x] **Track: GitHub Pages deployment and Actions support.**
   *Link: [./archive/github_pages_support_20260308/](./archive/github_pages_support_20260308/)*
+- [x] **Track: Invoicing - Create and Export Professional Invoices.**
+  *Link: [./archive/invoicing_20260308/](./archive/invoicing_20260308/)*

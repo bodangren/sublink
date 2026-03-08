@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { initDB, saveTask, getTasks, getTask, updateTask, deleteTask, savePhoto, getPhotosByTask, deletePhotosByTask, clearDatabase, saveDailyLog, getDailyLogs, getDailyLog, updateDailyLog, deleteDailyLog, getDailyLogByDate, saveProject, getProjects, getProject, updateProject, deleteProject, getTasksByProject, getDailyLogsByProject } from './db'
+import { initDB, saveTask, getTasks, getTask, updateTask, deleteTask, savePhoto, getPhotosByTask, deletePhotosByTask, clearDatabase, saveDailyLog, getDailyLogs, getDailyLog, updateDailyLog, deleteDailyLog, getDailyLogByDate, saveProject, getProjects, getProject, updateProject, deleteProject, getTasksByProject, getDailyLogsByProject, saveInvoice, getInvoices, getInvoice, updateInvoice, deleteInvoice, getNextInvoiceNumber, getUnpaidInvoices, markInvoicePaid } from './db'
+import type { InvoiceLineItem } from './db'
 import 'fake-indexeddb/auto'
 
 describe('Task database operations', () => {
@@ -639,6 +640,328 @@ describe('Project database operations', () => {
       const logs = await getDailyLogsByProject(projectId)
       expect(logs.length).toBe(1)
       expect(logs[0].project).toBe('Project 1')
+    })
+  })
+})
+
+describe('Invoice database operations', () => {
+  const createLineItem = (overrides: Partial<InvoiceLineItem> = {}): InvoiceLineItem => ({
+    id: crypto.randomUUID(),
+    type: 'custom',
+    description: 'Test item',
+    quantity: 1,
+    rate: 100,
+    amount: 100,
+    ...overrides
+  })
+
+  beforeEach(async () => {
+    await initDB()
+    await clearDatabase()
+  })
+
+  describe('getNextInvoiceNumber', () => {
+    it('returns INV-001 for first invoice', async () => {
+      const number = await getNextInvoiceNumber()
+      expect(number).toBe('INV-001')
+    })
+
+    it('increments invoice number for subsequent invoices', async () => {
+      await saveInvoice({
+        clientName: 'Client 1',
+        issueDate: '2026-03-08',
+        dueDate: '2026-04-08',
+        lineItems: [createLineItem()],
+        subtotal: 100,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 100,
+        status: 'pending'
+      })
+
+      const number = await getNextInvoiceNumber()
+      expect(number).toBe('INV-002')
+    })
+
+    it('handles gaps in invoice numbers', async () => {
+      await saveInvoice({
+        clientName: 'Client 1',
+        issueDate: '2026-03-08',
+        dueDate: '2026-04-08',
+        lineItems: [createLineItem()],
+        subtotal: 100,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 100,
+        status: 'pending'
+      })
+      await saveInvoice({
+        clientName: 'Client 2',
+        issueDate: '2026-03-08',
+        dueDate: '2026-04-08',
+        lineItems: [createLineItem()],
+        subtotal: 200,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 200,
+        status: 'pending'
+      })
+
+      const number = await getNextInvoiceNumber()
+      expect(number).toBe('INV-003')
+    })
+  })
+
+  describe('saveInvoice', () => {
+    it('saves a new invoice and returns id and invoice number', async () => {
+      const result = await saveInvoice({
+        clientName: 'Test Client',
+        issueDate: '2026-03-08',
+        dueDate: '2026-04-08',
+        lineItems: [createLineItem()],
+        subtotal: 100,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 100,
+        status: 'pending'
+      })
+
+      expect(result.id).toBeDefined()
+      expect(result.invoiceNumber).toBe('INV-001')
+    })
+
+    it('saves invoice with all optional fields', async () => {
+      const projectId = await saveProject({ name: 'Test Project' })
+      const result = await saveInvoice({
+        projectId,
+        projectName: 'Test Project',
+        clientName: 'Full Client',
+        clientEmail: 'client@test.com',
+        clientAddress: '123 Test St',
+        issueDate: '2026-03-08',
+        dueDate: '2026-04-08',
+        lineItems: [createLineItem()],
+        subtotal: 500,
+        taxRate: 8.5,
+        taxAmount: 42.50,
+        total: 542.50,
+        notes: 'Thank you for your business',
+        status: 'draft'
+      })
+
+      const invoice = await getInvoice(result.id)
+      expect(invoice?.clientEmail).toBe('client@test.com')
+      expect(invoice?.taxRate).toBe(8.5)
+      expect(invoice?.notes).toBe('Thank you for your business')
+    })
+  })
+
+  describe('getInvoices', () => {
+    it('returns empty array when no invoices exist', async () => {
+      const invoices = await getInvoices()
+      expect(invoices).toEqual([])
+    })
+
+    it('returns all saved invoices', async () => {
+      await saveInvoice({
+        clientName: 'Client A',
+        issueDate: '2026-03-08',
+        dueDate: '2026-04-08',
+        lineItems: [],
+        subtotal: 100,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 100,
+        status: 'pending'
+      })
+      await saveInvoice({
+        clientName: 'Client B',
+        issueDate: '2026-03-08',
+        dueDate: '2026-04-08',
+        lineItems: [],
+        subtotal: 200,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 200,
+        status: 'paid'
+      })
+
+      const invoices = await getInvoices()
+      expect(invoices.length).toBe(2)
+      expect(invoices.map(i => i.clientName)).toContain('Client A')
+      expect(invoices.map(i => i.clientName)).toContain('Client B')
+    })
+  })
+
+  describe('getInvoice', () => {
+    it('returns undefined for non-existent invoice', async () => {
+      const invoice = await getInvoice('non-existent-id')
+      expect(invoice).toBeUndefined()
+    })
+
+    it('returns the specific invoice by id', async () => {
+      const result = await saveInvoice({
+        clientName: 'Specific Client',
+        issueDate: '2026-03-08',
+        dueDate: '2026-04-08',
+        lineItems: [createLineItem({ description: 'Specific work' })],
+        subtotal: 500,
+        taxRate: 10,
+        taxAmount: 50,
+        total: 550,
+        status: 'pending'
+      })
+
+      const invoice = await getInvoice(result.id)
+      expect(invoice).toBeDefined()
+      expect(invoice?.id).toBe(result.id)
+      expect(invoice?.clientName).toBe('Specific Client')
+      expect(invoice?.lineItems.length).toBe(1)
+      expect(invoice?.lineItems[0].description).toBe('Specific work')
+    })
+  })
+
+  describe('updateInvoice', () => {
+    it('updates an existing invoice', async () => {
+      const result = await saveInvoice({
+        clientName: 'Original Client',
+        issueDate: '2026-03-08',
+        dueDate: '2026-04-08',
+        lineItems: [],
+        subtotal: 100,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 100,
+        status: 'draft'
+      })
+
+      await updateInvoice(result.id, { clientName: 'Updated Client', status: 'pending' })
+
+      const invoice = await getInvoice(result.id)
+      expect(invoice?.clientName).toBe('Updated Client')
+      expect(invoice?.status).toBe('pending')
+    })
+
+    it('throws error for non-existent invoice', async () => {
+      await expect(updateInvoice('non-existent-id', { clientName: 'New' }))
+        .rejects.toThrow('Invoice not found')
+    })
+
+    it('updates updatedAt timestamp', async () => {
+      const result = await saveInvoice({
+        clientName: 'Test',
+        issueDate: '2026-03-08',
+        dueDate: '2026-04-08',
+        lineItems: [],
+        subtotal: 100,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 100,
+        status: 'pending'
+      })
+      const before = await getInvoice(result.id)
+      
+      await new Promise(resolve => setTimeout(resolve, 10))
+      await updateInvoice(result.id, { clientName: 'Updated' })
+      
+      const after = await getInvoice(result.id)
+      expect(after?.updatedAt).toBeGreaterThan(before!.updatedAt)
+    })
+  })
+
+  describe('deleteInvoice', () => {
+    it('deletes an existing invoice', async () => {
+      const result = await saveInvoice({
+        clientName: 'To Delete',
+        issueDate: '2026-03-08',
+        dueDate: '2026-04-08',
+        lineItems: [],
+        subtotal: 100,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 100,
+        status: 'pending'
+      })
+      
+      await deleteInvoice(result.id)
+      
+      const invoices = await getInvoices()
+      expect(invoices.find(i => i.id === result.id)).toBeUndefined()
+    })
+
+    it('does not throw when deleting non-existent invoice', async () => {
+      await expect(deleteInvoice('non-existent-id')).resolves.not.toThrow()
+    })
+  })
+
+  describe('getUnpaidInvoices', () => {
+    it('returns only pending and overdue invoices', async () => {
+      await saveInvoice({
+        clientName: 'Pending Client',
+        issueDate: '2026-03-08',
+        dueDate: '2026-04-08',
+        lineItems: [],
+        subtotal: 100,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 100,
+        status: 'pending'
+      })
+      await saveInvoice({
+        clientName: 'Overdue Client',
+        issueDate: '2026-01-01',
+        dueDate: '2026-02-01',
+        lineItems: [],
+        subtotal: 200,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 200,
+        status: 'overdue'
+      })
+      await saveInvoice({
+        clientName: 'Paid Client',
+        issueDate: '2026-03-08',
+        dueDate: '2026-04-08',
+        lineItems: [],
+        subtotal: 300,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 300,
+        status: 'paid'
+      })
+
+      const unpaid = await getUnpaidInvoices()
+      expect(unpaid.length).toBe(2)
+      expect(unpaid.map(i => i.clientName)).toContain('Pending Client')
+      expect(unpaid.map(i => i.clientName)).toContain('Overdue Client')
+      expect(unpaid.map(i => i.clientName)).not.toContain('Paid Client')
+    })
+  })
+
+  describe('markInvoicePaid', () => {
+    it('marks an invoice as paid', async () => {
+      const result = await saveInvoice({
+        clientName: 'To Pay',
+        issueDate: '2026-03-08',
+        dueDate: '2026-04-08',
+        lineItems: [],
+        subtotal: 100,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 100,
+        status: 'pending'
+      })
+
+      await markInvoicePaid(result.id)
+
+      const invoice = await getInvoice(result.id)
+      expect(invoice?.status).toBe('paid')
+      expect(invoice?.paidAt).toBeDefined()
+    })
+
+    it('throws error for non-existent invoice', async () => {
+      await expect(markInvoicePaid('non-existent-id'))
+        .rejects.toThrow('Invoice not found')
     })
   })
 })
