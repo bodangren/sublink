@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { initDB, saveTask, getTasks, getTask, updateTask, deleteTask, savePhoto, getPhotosByTask, deletePhotosByTask, clearDatabase } from './db'
+import { initDB, saveTask, getTasks, getTask, updateTask, deleteTask, savePhoto, getPhotosByTask, deletePhotosByTask, clearDatabase, saveDailyLog, getDailyLogs, getDailyLog, updateDailyLog, deleteDailyLog, getDailyLogByDate } from './db'
 import 'fake-indexeddb/auto'
 
 describe('Task database operations', () => {
@@ -261,6 +261,229 @@ describe('Photo database operations', () => {
 
       const otherPhotos = await getPhotosByTask(otherTaskId)
       expect(otherPhotos.length).toBe(1)
+    })
+  })
+})
+
+describe('Daily Log database operations', () => {
+  beforeEach(async () => {
+    await initDB()
+    await clearDatabase()
+  })
+
+  describe('saveDailyLog', () => {
+    it('saves a new daily log and returns its id', async () => {
+      const id = await saveDailyLog({
+        date: '2026-03-08',
+        project: 'Downtown Office Building',
+        weather: 'Sunny, 72F',
+        workPerformed: 'Installed HVAC units on floors 3-5',
+        personnel: 'John, Mike, Sarah',
+        delays: '',
+        equipment: '',
+        notes: ''
+      })
+
+      expect(id).toBeDefined()
+      expect(typeof id).toBe('string')
+    })
+
+    it('saves log with all optional fields', async () => {
+      const id = await saveDailyLog({
+        date: '2026-03-08',
+        project: 'Test Project',
+        weather: 'Rainy',
+        workPerformed: 'Testing',
+        personnel: 'Tester',
+        delays: 'Weather delay',
+        equipment: 'Crane, Forklift',
+        notes: 'Additional notes here'
+      })
+
+      expect(id).toBeDefined()
+    })
+  })
+
+  describe('getDailyLogs', () => {
+    it('returns empty array when no logs exist', async () => {
+      const logs = await getDailyLogs()
+      expect(logs).toEqual([])
+    })
+
+    it('returns all saved logs', async () => {
+      await saveDailyLog({
+        date: '2026-03-07',
+        project: 'Project A',
+        weather: 'Sunny',
+        workPerformed: 'Work A',
+        personnel: 'Team A',
+        delays: '',
+        equipment: '',
+        notes: ''
+      })
+      await saveDailyLog({
+        date: '2026-03-08',
+        project: 'Project B',
+        weather: 'Cloudy',
+        workPerformed: 'Work B',
+        personnel: 'Team B',
+        delays: '',
+        equipment: '',
+        notes: ''
+      })
+
+      const logs = await getDailyLogs()
+      expect(logs.length).toBe(2)
+      expect(logs.map(l => l.project)).toContain('Project A')
+      expect(logs.map(l => l.project)).toContain('Project B')
+    })
+
+    it('returns logs with all fields populated', async () => {
+      await saveDailyLog({
+        date: '2026-03-08',
+        project: 'Full Log Test',
+        weather: 'Partly Cloudy, 68F',
+        workPerformed: 'Complete work description',
+        personnel: 'John, Jane',
+        delays: 'Material delay',
+        equipment: 'Excavator',
+        notes: 'End of day notes'
+      })
+
+      const logs = await getDailyLogs()
+      const log = logs.find(l => l.project === 'Full Log Test')
+      
+      expect(log).toBeDefined()
+      expect(log?.date).toBe('2026-03-08')
+      expect(log?.weather).toBe('Partly Cloudy, 68F')
+      expect(log?.workPerformed).toBe('Complete work description')
+      expect(log?.delays).toBe('Material delay')
+      expect(log?.equipment).toBe('Excavator')
+      expect(log?.id).toBeDefined()
+      expect(log?.createdAt).toBeDefined()
+      expect(log?.updatedAt).toBeDefined()
+    })
+  })
+
+  describe('getDailyLog', () => {
+    it('returns undefined for non-existent log', async () => {
+      const log = await getDailyLog('non-existent-id')
+      expect(log).toBeUndefined()
+    })
+
+    it('returns the specific log by id', async () => {
+      const id = await saveDailyLog({
+        date: '2026-03-08',
+        project: 'Specific Project',
+        weather: 'Clear',
+        workPerformed: 'Specific work',
+        personnel: 'Specific team',
+        delays: '',
+        equipment: '',
+        notes: ''
+      })
+
+      const log = await getDailyLog(id)
+      expect(log).toBeDefined()
+      expect(log?.id).toBe(id)
+      expect(log?.project).toBe('Specific Project')
+    })
+  })
+
+  describe('updateDailyLog', () => {
+    it('updates an existing log', async () => {
+      const id = await saveDailyLog({
+        date: '2026-03-08',
+        project: 'Original Project',
+        weather: 'Sunny',
+        workPerformed: 'Original work',
+        personnel: 'Original team',
+        delays: '',
+        equipment: '',
+        notes: ''
+      })
+
+      await updateDailyLog(id, { project: 'Updated Project' })
+
+      const logs = await getDailyLogs()
+      const log = logs.find(l => l.id === id)
+      expect(log?.project).toBe('Updated Project')
+      expect(log?.workPerformed).toBe('Original work')
+    })
+
+    it('throws error for non-existent log', async () => {
+      await expect(updateDailyLog('non-existent-id', { project: 'New' }))
+        .rejects.toThrow('Daily log not found')
+    })
+
+    it('updates updatedAt timestamp', async () => {
+      const id = await saveDailyLog({
+        date: '2026-03-08',
+        project: 'Test',
+        weather: 'Test',
+        workPerformed: 'Test',
+        personnel: 'Test',
+        delays: '',
+        equipment: '',
+        notes: ''
+      })
+      const logsBefore = await getDailyLogs()
+      const before = logsBefore.find(l => l.id === id)
+      
+      await new Promise(resolve => setTimeout(resolve, 10))
+      await updateDailyLog(id, { project: 'Updated' })
+      
+      const logsAfter = await getDailyLogs()
+      const after = logsAfter.find(l => l.id === id)
+      expect(after?.updatedAt).toBeGreaterThan(before!.updatedAt)
+    })
+  })
+
+  describe('deleteDailyLog', () => {
+    it('deletes an existing log', async () => {
+      const id = await saveDailyLog({
+        date: '2026-03-08',
+        project: 'To delete',
+        weather: 'Test',
+        workPerformed: 'Test',
+        personnel: 'Test',
+        delays: '',
+        equipment: '',
+        notes: ''
+      })
+      
+      await deleteDailyLog(id)
+      
+      const logs = await getDailyLogs()
+      expect(logs.find(l => l.id === id)).toBeUndefined()
+    })
+
+    it('does not throw when deleting non-existent log', async () => {
+      await expect(deleteDailyLog('non-existent-id')).resolves.not.toThrow()
+    })
+  })
+
+  describe('getDailyLogByDate', () => {
+    it('returns undefined when no log exists for date', async () => {
+      const log = await getDailyLogByDate('2026-03-08')
+      expect(log).toBeUndefined()
+    })
+
+    it('returns the log for the specified date', async () => {
+      await saveDailyLog({
+        date: '2026-03-08',
+        project: 'March 8 Project',
+        weather: 'Sunny',
+        workPerformed: 'Work for March 8',
+        personnel: 'Team',
+        delays: '',
+        equipment: '',
+        notes: ''
+      })
+
+      const log = await getDailyLogByDate('2026-03-08')
+      expect(log).toBeDefined()
+      expect(log?.project).toBe('March 8 Project')
     })
   })
 })

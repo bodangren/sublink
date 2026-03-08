@@ -53,17 +53,34 @@ export interface SubLinkDB extends DBSchema {
     }
     indexes: { 'by-task': string }
   }
+  dailyLogs: {
+    key: string
+    value: {
+      id: string
+      date: string
+      project: string
+      weather: string
+      workPerformed: string
+      delays?: string
+      personnel: string
+      equipment?: string
+      notes?: string
+      createdAt: number
+      updatedAt: number
+    }
+  }
 }
 
 export type Waiver = SubLinkDB['waivers']['value']
 export type Certificate = SubLinkDB['certificates']['value']
 export type Task = SubLinkDB['tasks']['value']
 export type TaskPhoto = SubLinkDB['photos']['value']
+export type DailyLog = SubLinkDB['dailyLogs']['value']
 
 let db: IDBPDatabase<SubLinkDB>
 
 export const initDB = async () => {
-  db = await openDB<SubLinkDB>('sublink-db', 3, {
+  db = await openDB<SubLinkDB>('sublink-db', 4, {
     upgrade(db, oldVersion) {
       if (oldVersion < 1) {
         db.createObjectStore('waivers', {
@@ -83,6 +100,11 @@ export const initDB = async () => {
           keyPath: 'id',
         })
         photoStore.createIndex('by-task', 'taskId')
+      }
+      if (oldVersion < 4) {
+        db.createObjectStore('dailyLogs', {
+          keyPath: 'id',
+        })
       }
     },
   })
@@ -173,4 +195,35 @@ export const clearDatabase = async () => {
   await db.clear('certificates')
   await db.clear('tasks')
   await db.clear('photos')
+  await db.clear('dailyLogs')
+}
+
+export const saveDailyLog = async (log: Omit<SubLinkDB['dailyLogs']['value'], 'id' | 'createdAt' | 'updatedAt'>) => {
+  const id = crypto.randomUUID()
+  const now = Date.now()
+  await db.put('dailyLogs', { ...log, id, createdAt: now, updatedAt: now })
+  return id
+}
+
+export const getDailyLogs = async () => {
+  return await db.getAll('dailyLogs')
+}
+
+export const getDailyLog = async (id: string) => {
+  return await db.get('dailyLogs', id)
+}
+
+export const updateDailyLog = async (id: string, updates: Partial<Omit<SubLinkDB['dailyLogs']['value'], 'id' | 'createdAt'>>) => {
+  const existing = await db.get('dailyLogs', id)
+  if (!existing) throw new Error('Daily log not found')
+  await db.put('dailyLogs', { ...existing, ...updates, updatedAt: Date.now() })
+}
+
+export const deleteDailyLog = async (id: string) => {
+  await db.delete('dailyLogs', id)
+}
+
+export const getDailyLogByDate = async (date: string) => {
+  const logs = await db.getAll('dailyLogs')
+  return logs.find(log => log.date === date)
 }

@@ -18,3 +18,5 @@ This file tracks all major tracks for the project. Each track has its own detail
   *Link: [./archive/code_cleanup_refactor_20260308/](./archive/code_cleanup_refactor_20260308/)*
 - [x] **Track: Dashboard Enhancement - Information-Rich Command Center.**
   *Link: [./archive/dashboard_enhancement_20260308/](./archive/dashboard_enhancement_20260308/)*
+- [x] **Track: Daily Construction Logs - Job Site Documentation.**
+  *Link: [./archive/daily_logs_20260308/](./archive/daily_logs_20260308/)*

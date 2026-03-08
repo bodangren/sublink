@@ -6,12 +6,16 @@ import COIForm from './components/COIForm'
 import TaskForm from './components/TaskForm'
 import TaskList from './components/TaskList'
 import TaskDetail from './components/TaskDetail'
+import DailyLogForm from './components/DailyLogForm'
+import DailyLogList from './components/DailyLogList'
+import DailyLogDetail from './components/DailyLogDetail'
+import TodayLogStatus from './components/TodayLogStatus'
 import DashboardStats from './components/DashboardStats'
 import ExpiringCOIs from './components/ExpiringCOIs'
 import RecentTasks from './components/RecentTasks'
 import RecentWaivers from './components/RecentWaivers'
-import { getWaivers, getCOIs, deleteCOI, getTasks } from './db'
-import type { Waiver, Certificate, Task } from './db'
+import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLogs } from './db'
+import type { Waiver, Certificate, Task, DailyLog } from './db'
 import { getCOIStatus, getStatusColor, getStatusLabel } from './utils/coiStatus'
 import { useItemId, useTaskIdFromPath, useEditItem, formatCurrency } from './hooks/useEditWrapper'
 
@@ -21,12 +25,16 @@ const Home = () => {
       <h1>SubLink</h1>
       <p>Rugged utility for subcontractors.</p>
       <DashboardStats />
+      <TodayLogStatus />
       <ExpiringCOIs />
       <RecentTasks />
       <RecentWaivers />
       <div style={{ marginTop: '2rem' }}>
+        <NavLink to="/logs/new">
+          <button>New Daily Log</button>
+        </NavLink>
         <NavLink to="/tasking/new">
-          <button>Quick Task + Photo</button>
+          <button style={{ marginTop: '0.5rem' }}>Quick Task + Photo</button>
         </NavLink>
         <NavLink to="/waivers/new">
           <button style={{ marginTop: '0.5rem' }}>New Lien Waiver</button>
@@ -201,6 +209,35 @@ const TaskDetailWrapper = () => {
   return <TaskDetail taskId={id} />
 }
 
+const Logs = () => <DailyLogList />
+
+const DailyLogEditWrapper = () => {
+  const id = useItemId() || ''
+  const { item: log, loading } = useEditItem<DailyLog>(id, getDailyLogs, (l: DailyLog, id: string) => l.id === id)
+
+  if (loading) return <div className="container"><p>Loading...</p></div>
+  if (!log) return <div className="container"><p>Daily log not found.</p></div>
+
+  return <DailyLogForm editId={id} initialData={{ 
+    date: log.date, 
+    project: log.project, 
+    weather: log.weather, 
+    workPerformed: log.workPerformed, 
+    delays: log.delays || '', 
+    personnel: log.personnel, 
+    equipment: log.equipment || '', 
+    notes: log.notes || '' 
+  }} />
+}
+
+const DailyLogDetailWrapper = () => {
+  const id = useItemId() || ''
+
+  if (!id) return <div className="container"><p>Daily log not found.</p></div>
+
+  return <DailyLogDetail logId={id} />
+}
+
 const AppShell = () => (
   <div className="app-shell">
     <div className="content">
@@ -211,6 +248,10 @@ const AppShell = () => (
         <Route path="/compliance" element={<Compliance />} />
         <Route path="/compliance/new" element={<COIForm />} />
         <Route path="/compliance/edit/:id" element={<COIEditWrapper />} />
+        <Route path="/logs" element={<Logs />} />
+        <Route path="/logs/new" element={<DailyLogForm />} />
+        <Route path="/logs/edit/:id" element={<DailyLogEditWrapper />} />
+        <Route path="/logs/:id" element={<DailyLogDetailWrapper />} />
         <Route path="/tasking" element={<Tasking />} />
         <Route path="/tasking/new" element={<TaskForm />} />
         <Route path="/tasking/edit/:id" element={<TaskEditWrapper />} />
@@ -221,14 +262,17 @@ const AppShell = () => (
       <NavLink to="/" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Home</span>
       </NavLink>
+      <NavLink to="/logs" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+        <span>Logs</span>
+      </NavLink>
+      <NavLink to="/tasking" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+        <span>Tasks</span>
+      </NavLink>
       <NavLink to="/waivers" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Waivers</span>
       </NavLink>
       <NavLink to="/compliance" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Compliance</span>
-      </NavLink>
-      <NavLink to="/tasking" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-        <span>Tasks</span>
       </NavLink>
     </nav>
   </div>
