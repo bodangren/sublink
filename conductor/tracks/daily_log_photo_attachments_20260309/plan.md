@@ -9,7 +9,7 @@
 - [x] 1.6 Update `saveDailyLog` and `updateDailyLog` to handle photoIds (Already supported - photoIds is optional field)
 - [x] 1.7 Write tests for new database functions
 
-## Phase 2: DailyLogForm Photo Integration
+## Phase 2: DailyLogForm Photo Integration [checkpoint: 06ceca1]
 - [x] 2.1 Import and use photo capture functionality in DailyLogForm
 - [x] 2.2 Add file input and capture button to form UI
 - [x] 2.3 Add photo preview/count section above form submit
