@@ -40,11 +40,11 @@
 - [ ] 5.3 Test backup/restore with daily log photos
 
 ## Phase 6: Dashboard Updates
-- [ ] 6.1 Update TodayLogStatus to show photo count if log exists
-- [ ] 6.2 Write tests for dashboard photo count display
+- [x] 6.1 Update TodayLogStatus to show photo count if log exists
+- [x] 6.2 Write tests for dashboard photo count display
 
 ## Phase 7: Final Verification
-- [ ] 7.1 Create daily log with multiple photos
+- [~] 7.1 Create daily log with multiple photos
 - [ ] 7.2 View daily log and verify photos display
 - [ ] 7.3 Export PDF and verify photos render
 - [ ] 7.4 Test offline functionality
