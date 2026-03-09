@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { 
   sanitizeFilename, 
-  formatDate, 
-  formatShortDate,
   generatePDFFilename
 } from './pdfGenerator'
+import {
+  formatDateWithTime,
+  formatShortDateFromTimestamp
+} from './pdfShared'
 
 describe('sanitizeFilename', () => {
   it('removes special characters', () => {
@@ -33,10 +35,10 @@ describe('sanitizeFilename', () => {
   })
 })
 
-describe('formatDate', () => {
+describe('formatDateWithTime', () => {
   it('formats timestamp to readable date', () => {
     const timestamp = new Date('2024-03-15T14:30:00').getTime()
-    const result = formatDate(timestamp)
+    const result = formatDateWithTime(timestamp)
     expect(result).toContain('March')
     expect(result).toContain('15')
     expect(result).toContain('2024')
@@ -44,20 +46,20 @@ describe('formatDate', () => {
 
   it('includes time', () => {
     const timestamp = new Date('2024-03-15T14:30:00').getTime()
-    const result = formatDate(timestamp)
+    const result = formatDateWithTime(timestamp)
     expect(result).toMatch(/\d{1,2}:\d{2}/)
   })
 })
 
-describe('formatShortDate', () => {
+describe('formatShortDateFromTimestamp', () => {
   it('formats timestamp to ISO date string', () => {
     const timestamp = new Date('2024-03-15T14:30:00').getTime()
-    expect(formatShortDate(timestamp)).toBe('2024-03-15')
+    expect(formatShortDateFromTimestamp(timestamp)).toBe('2024-03-15')
   })
 
   it('handles different dates', () => {
     const timestamp = new Date('2024-12-25T00:00:00').getTime()
-    expect(formatShortDate(timestamp)).toBe('2024-12-25')
+    expect(formatShortDateFromTimestamp(timestamp)).toBe('2024-12-25')
   })
 })
 

@@ -1,40 +1,13 @@
 import { jsPDF } from 'jspdf'
 import type { Task, TaskPhoto } from '../db'
-
-export const sanitizeFilename = (title: string): string => {
-  return title
-    .replace(/[^a-zA-Z0-9\s-]/g, '')
-    .replace(/\s+/g, '_')
-    .substring(0, 50)
-    .trim()
-}
-
-export const formatDate = (timestamp: number): string => {
-  return new Date(timestamp).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-export const formatShortDate = (timestamp: number): string => {
-  const date = new Date(timestamp)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-export const loadImage = (src: string): Promise<HTMLImageElement> => {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve(img)
-    img.onerror = reject
-    img.src = src
-  })
-}
+import {
+  PAGE_MARGIN,
+  formatDateWithTime,
+  formatShortDateFromTimestamp,
+  sanitizeFilename,
+  loadImage,
+  downloadPDF
+} from './pdfShared'
 
 interface GeneratePDFOptions {
   task: Task
@@ -45,90 +18,89 @@ export const generateTaskPDF = async ({ task, photos }: GeneratePDFOptions): Pro
   const doc = new jsPDF()
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
-  const margin = 20
-  const contentWidth = pageWidth - margin * 2
+  const contentWidth = pageWidth - PAGE_MARGIN * 2
   
-  let yPosition = margin
+  let yPosition = PAGE_MARGIN
   
   doc.setFontSize(24)
   doc.setTextColor(0, 0, 0)
-  doc.text('SubLink', margin, yPosition)
+  doc.text('SubLink', PAGE_MARGIN, yPosition)
   yPosition += 10
   
   doc.setFontSize(10)
   doc.setTextColor(100, 100, 100)
-  doc.text('Proof of Work Documentation', margin, yPosition)
+  doc.text('Proof of Work Documentation', PAGE_MARGIN, yPosition)
   yPosition += 15
   
   doc.setDrawColor(200, 200, 200)
-  doc.line(margin, yPosition, pageWidth - margin, yPosition)
+  doc.line(PAGE_MARGIN, yPosition, pageWidth - PAGE_MARGIN, yPosition)
   yPosition += 15
   
   doc.setFontSize(18)
   doc.setTextColor(0, 0, 0)
   const titleLines = doc.splitTextToSize(task.title, contentWidth)
-  doc.text(titleLines, margin, yPosition)
+  doc.text(titleLines, PAGE_MARGIN, yPosition)
   yPosition += titleLines.length * 8 + 5
   
   doc.setFontSize(10)
   doc.setTextColor(80, 80, 80)
   
-  doc.text(`Created: ${formatDate(task.createdAt)}`, margin, yPosition)
+  doc.text(`Created: ${formatDateWithTime(task.createdAt)}`, PAGE_MARGIN, yPosition)
   yPosition += 6
   
   if (task.contractReference) {
-    doc.text(`Contract: ${task.contractReference}`, margin, yPosition)
+    doc.text(`Contract: ${task.contractReference}`, PAGE_MARGIN, yPosition)
     yPosition += 6
   }
   
-  doc.text(`Photos: ${photos.length}`, margin, yPosition)
+  doc.text(`Photos: ${photos.length}`, PAGE_MARGIN, yPosition)
   yPosition += 10
   
   doc.setFontSize(11)
   doc.setTextColor(0, 0, 0)
   const descLines = doc.splitTextToSize(task.description, contentWidth)
-  doc.text(descLines, margin, yPosition)
+  doc.text(descLines, PAGE_MARGIN, yPosition)
   yPosition += descLines.length * 5 + 15
   
   if (photos.length === 0) {
     doc.setFontSize(12)
     doc.setTextColor(100, 100, 100)
-    doc.text('No photos attached to this task.', margin, yPosition)
+    doc.text('No photos attached to this task.', PAGE_MARGIN, yPosition)
   } else {
     for (let i = 0; i < photos.length; i++) {
       const photo = photos[i]
       
-      const remainingHeight = pageHeight - yPosition - margin
+      const remainingHeight = pageHeight - yPosition - PAGE_MARGIN
       if (remainingHeight < 100) {
         doc.addPage()
-        yPosition = margin
+        yPosition = PAGE_MARGIN
       }
       
       doc.setDrawColor(200, 200, 200)
       doc.setFillColor(245, 245, 245)
-      doc.roundedRect(margin, yPosition, contentWidth, 80, 3, 3, 'FD')
+      doc.roundedRect(PAGE_MARGIN, yPosition, contentWidth, 80, 3, 3, 'FD')
       
       doc.setFontSize(9)
       doc.setTextColor(60, 60, 60)
-      doc.text(`Photo ${i + 1} of ${photos.length}`, margin + 5, yPosition + 10)
-      doc.text(`Captured: ${formatDate(photo.capturedAt)}`, margin + 5, yPosition + 18)
+      doc.text(`Photo ${i + 1} of ${photos.length}`, PAGE_MARGIN + 5, yPosition + 10)
+      doc.text(`Captured: ${formatDateWithTime(photo.capturedAt)}`, PAGE_MARGIN + 5, yPosition + 18)
       
       if (photo.latitude !== undefined && photo.longitude !== undefined) {
-        doc.text(`GPS: ${photo.latitude.toFixed(6)}, ${photo.longitude.toFixed(6)}`, margin + 5, yPosition + 26)
+        doc.text(`GPS: ${photo.latitude.toFixed(6)}, ${photo.longitude.toFixed(6)}`, PAGE_MARGIN + 5, yPosition + 26)
       }
       
       try {
         const img = await loadImage(photo.imageData)
         const imgWidth = 60
         const imgHeight = (img.height / img.width) * imgWidth
-        const imgX = pageWidth - margin - imgWidth - 5
+        const imgX = pageWidth - PAGE_MARGIN - imgWidth - 5
         const imgY = yPosition + 5
         
         doc.addImage(photo.imageData, 'JPEG', imgX, imgY, imgWidth, Math.min(imgHeight, 70))
       } catch {
         doc.setFontSize(8)
         doc.setTextColor(150, 150, 150)
-        doc.text('Image unavailable', pageWidth - margin - 40, yPosition + 45)
+        doc.text('Image unavailable', pageWidth - PAGE_MARGIN - 40, yPosition + 45)
       }
       
       yPosition += 90
@@ -142,7 +114,7 @@ export const generateTaskPDF = async ({ task, photos }: GeneratePDFOptions): Pro
     doc.setTextColor(150, 150, 150)
     doc.text(
       `Generated by SubLink | Page ${i} of ${pageCount}`,
-      margin,
+      PAGE_MARGIN,
       pageHeight - 10
     )
   }
@@ -150,19 +122,10 @@ export const generateTaskPDF = async ({ task, photos }: GeneratePDFOptions): Pro
   return doc.output('blob')
 }
 
-export const downloadPDF = (blob: Blob, filename: string): void => {
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
-}
-
 export const generatePDFFilename = (task: Task): string => {
   const sanitizedTitle = sanitizeFilename(task.title)
-  const dateStr = formatShortDate(task.createdAt)
+  const dateStr = formatShortDateFromTimestamp(task.createdAt)
   return `SubLink_${sanitizedTitle}_${dateStr}.pdf`
 }
+
+export { sanitizeFilename, downloadPDF }
