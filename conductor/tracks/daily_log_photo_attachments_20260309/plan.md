@@ -18,12 +18,12 @@
 - [x] 2.6 Write tests for photo capture in form
 
 ## Phase 3: DailyLogDetail Photo Display
-- [ ] 3.1 Import `PhotoGallery` component
-- [ ] 3.2 Load photos using `getPhotosByDailyLog`
-- [ ] 3.3 Add photo count to detail header
-- [ ] 3.4 Add PhotoGallery section after notes
-- [ ] 3.5 Handle empty photo state
-- [ ] 3.6 Write tests for photo display in detail view
+- [x] 3.1 Import `PhotoGallery` component
+- [x] 3.2 Load photos using `getPhotosByDailyLog`
+- [x] 3.3 Add photo count to detail header
+- [x] 3.4 Add PhotoGallery section after notes
+- [x] 3.5 Handle empty photo state
+- [x] 3.6 Write tests for photo display in detail view
 
 ## Phase 4: PDF Photo Integration
 - [ ] 4.1 Update `generateDailyLogPdf` signature to accept photos

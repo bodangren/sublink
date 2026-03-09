@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, NavLink } from 'react-router-dom'
-import { getDailyLog, deleteDailyLog } from '../db'
-import type { DailyLog } from '../db'
+import { getDailyLog, deleteDailyLog, getPhotosByDailyLog, getPhotoCountByDailyLog } from '../db'
+import PhotoGallery from './PhotoGallery'
+import type { DailyLog, TaskPhoto } from '../db'
 import { generateDailyLogPdf } from '../utils/dailyLogPdf'
 import { useConfirm } from '../hooks/useConfirm'
 
@@ -13,19 +14,38 @@ const DailyLogDetail = ({ logId }: DailyLogDetailProps) => {
   const navigate = useNavigate()
   const confirm = useConfirm()
   const [log, setLog] = useState<DailyLog | null>(null)
+  const [photos, setPhotos] = useState<TaskPhoto[]>([])
+  const [photoCount, setPhotoCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     let mounted = true
-    getDailyLog(logId).then(data => {
-      if (mounted) {
-        setLog(data || null)
-        setLoading(false)
+    const loadData = async () => {
+      try {
+        const logData = await getDailyLog(logId)
+        if (!mounted) return
+        if (!logData) {
+          navigate('/logs')
+          return
+        }
+        setLog(logData)
+        
+        const photosData = await getPhotosByDailyLog(logId)
+        const count = await getPhotoCountByDailyLog(logId)
+        if (mounted) {
+          setPhotos(photosData)
+          setPhotoCount(count)
+        }
+      } catch (err) {
+        console.error('Failed to load daily log:', err)
+      } finally {
+        if (mounted) setLoading(false)
       }
-    })
+    }
+    loadData()
     return () => { mounted = false }
-  }, [logId])
+  }, [logId, navigate])
 
   const handleDelete = async () => {
     const confirmed = await confirm({
@@ -77,7 +97,21 @@ const DailyLogDetail = ({ logId }: DailyLogDetailProps) => {
 
   return (
     <div className="container">
-      <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{log.project}</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+        <h1 style={{ fontSize: '1.5rem', margin: 0 }}>{log.project}</h1>
+        {photoCount > 0 && (
+          <span style={{ 
+            backgroundColor: 'var(--accent-color)', 
+            color: '#000', 
+            padding: '0.25rem 0.75rem', 
+            borderRadius: '4px',
+            fontSize: '0.875rem',
+            fontWeight: 'bold'
+          }}>
+            {photoCount} photo{photoCount !== 1 ? 's' : ''}
+          </span>
+        )}
+      </div>
       <p style={{ color: 'var(--accent-color)', marginBottom: '1.5rem' }}>{formatDate(log.date)}</p>
 
       <div style={{ 
@@ -144,6 +178,18 @@ const DailyLogDetail = ({ logId }: DailyLogDetailProps) => {
         }}>
           <h3 style={{ margin: '0 0 0.5rem 0', padding: 0, fontSize: '1rem' }}>Additional Notes</h3>
           <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{log.notes}</p>
+        </div>
+      )}
+
+      {photos.length > 0 && (
+        <div style={{ 
+          backgroundColor: 'var(--secondary-bg)', 
+          padding: '1rem', 
+          borderRadius: '4px',
+          marginBottom: '1rem'
+        }}>
+          <h3 style={{ margin: '0 0 1rem 0', padding: 0, fontSize: '1rem' }}>Site Photos</h3>
+          <PhotoGallery photos={photos} />
         </div>
       )}
 
