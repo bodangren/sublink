@@ -1,5 +1,10 @@
 import { jsPDF } from 'jspdf'
-import type { DailyLog } from '../db'
+import type { DailyLog, TaskPhoto } from '../db'
+
+interface GenerateDailyLogPdfOptions {
+  log: DailyLog
+  photos: TaskPhoto[]
+}
 
 export const sanitizeFilename = (title: string): string => {
   return title
@@ -7,6 +12,15 @@ export const sanitizeFilename = (title: string): string => {
     .replace(/\s+/g, '_')
     .substring(0, 50)
     .trim()
+}
+
+const loadImage = (src: string): Promise<HTMLImageElement> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = src
+  })
 }
 
 const formatDate = (dateStr: string): string => {
@@ -22,7 +36,7 @@ const formatShortDate = (dateStr: string): string => {
   return dateStr.replace(/-/g, '')
 }
 
-export const generateDailyLogPdf = async (log: DailyLog): Promise<void> => {
+export const generateDailyLogPdf = async ({ log, photos }: GenerateDailyLogPdfOptions): Promise<void> => {
   const doc = new jsPDF()
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
@@ -54,6 +68,10 @@ export const generateDailyLogPdf = async (log: DailyLog): Promise<void> => {
   doc.setFontSize(11)
   doc.setTextColor(80, 80, 80)
   doc.text(formatDate(log.date), margin, yPosition)
+  
+  if (photos.length > 0) {
+    doc.text(`${photos.length} photo${photos.length !== 1 ? 's' : ''}`, pageWidth - margin - 30, yPosition)
+  }
   yPosition += 15
   
   const addSection = (title: string, content: string, borderColor?: [number, number, number]) => {
@@ -100,6 +118,87 @@ export const generateDailyLogPdf = async (log: DailyLog): Promise<void> => {
   
   if (log.notes) {
     addSection('Additional Notes', log.notes)
+  }
+  
+  if (photos.length > 0) {
+    yPosition += 5
+    doc.setDrawColor(200, 200, 200)
+    doc.line(margin, yPosition, pageWidth - margin, yPosition)
+    yPosition += 10
+    
+    doc.setFontSize(14)
+    doc.setTextColor(0, 0, 0)
+    doc.text('Site Photos', margin, yPosition)
+    yPosition += 10
+    
+    const photoGridCols = 2
+    const photoWidth = (contentWidth - 10) / photoGridCols
+    const photoHeight = 60
+    const photoSpacing = 10
+    const metadataHeight = 20
+    
+    for (let i = 0; i < photos.length; i++) {
+      const photo = photos[i]
+      const col = i % photoGridCols
+      const row = Math.floor(i / photoGridCols)
+      
+      const remainingHeight = pageHeight - yPosition - margin
+      if (remainingHeight < photoHeight + metadataHeight + 20) {
+        doc.addPage()
+        yPosition = margin
+      }
+      
+      const photoX = margin + col * (photoWidth + photoSpacing)
+      const photoY = yPosition + row * (photoHeight + metadataHeight + photoSpacing)
+      
+      try {
+        const img = await loadImage(photo.imageData)
+        const imgAspect = img.height / img.width
+        let finalWidth = photoWidth
+        let finalHeight = photoHeight
+        
+        if (imgAspect > 1) {
+          finalHeight = photoHeight
+          finalWidth = photoHeight / imgAspect
+        } else {
+          finalWidth = photoWidth
+          finalHeight = photoWidth * imgAspect
+        }
+        
+        const imgX = photoX + (photoWidth - finalWidth) / 2
+        const imgY = photoY + (photoHeight - finalHeight) / 2
+        
+        doc.setDrawColor(200, 200, 200)
+        doc.setFillColor(245, 245, 245)
+        doc.roundedRect(photoX, photoY, photoWidth, photoHeight, 3, 3, 'FD')
+        
+        doc.addImage(photo.imageData, 'JPEG', imgX, imgY, finalWidth, Math.min(finalHeight, photoHeight - 4))
+      } catch {
+        doc.setDrawColor(200, 200, 200)
+        doc.setFillColor(245, 245, 245)
+        doc.roundedRect(photoX, photoY, photoWidth, photoHeight, 3, 3, 'FD')
+        
+        doc.setFontSize(8)
+        doc.setTextColor(150, 150, 150)
+        doc.text('Image unavailable', photoX + photoWidth / 2, photoY + photoHeight / 2, { align: 'center' })
+      }
+      
+      const metaY = photoY + photoHeight + 5
+      doc.setFontSize(7)
+      doc.setTextColor(60, 60, 60)
+      doc.text(`Photo ${i + 1}`, photoX, metaY)
+      doc.text(new Date(photo.capturedAt).toLocaleString(), photoX, metaY + 6)
+      
+      if (photo.latitude !== undefined && photo.longitude !== undefined) {
+        doc.setFontSize(6)
+        doc.setTextColor(100, 100, 100)
+        doc.text(`GPS: ${photo.latitude.toFixed(4)}, ${photo.longitude.toFixed(4)}`, photoX, metaY + 12)
+      }
+      
+      if (col === photoGridCols - 1 || i === photos.length - 1) {
+        yPosition = photoY + photoHeight + metadataHeight + photoSpacing
+      }
+    }
   }
   
   yPosition += 10

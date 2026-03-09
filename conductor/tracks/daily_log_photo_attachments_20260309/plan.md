@@ -26,13 +26,13 @@
 - [x] 3.6 Write tests for photo display in detail view
 
 ## Phase 4: PDF Photo Integration
-- [ ] 4.1 Update `generateDailyLogPdf` signature to accept photos
-- [ ] 4.2 Add photo rendering function to dailyLogPdf.ts
-- [ ] 4.3 Render photo thumbnails in grid layout
-- [ ] 4.4 Add photo metadata (timestamp, GPS) under each photo
-- [ ] 4.5 Handle multi-page photo sections
-- [ ] 4.6 Update DailyLogDetail to pass photos to PDF generator
-- [ ] 4.7 Test PDF generation with various photo counts
+- [x] 4.1 Update `generateDailyLogPdf` signature to accept photos
+- [x] 4.2 Add photo rendering function to dailyLogPdf.ts
+- [x] 4.3 Render photo thumbnails in grid layout
+- [x] 4.4 Add photo metadata (timestamp, GPS) under each photo
+- [x] 4.5 Handle multi-page photo sections
+- [x] 4.6 Update DailyLogDetail to pass photos to PDF generator
+- [x] 4.7 Test PDF generation with various photo counts
 
 ## Phase 5: Data Backup Integration
 - [ ] 5.1 Verify photos are already included in backup (they should be)

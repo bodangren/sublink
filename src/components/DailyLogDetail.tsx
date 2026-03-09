@@ -64,7 +64,7 @@ const DailyLogDetail = ({ logId }: DailyLogDetailProps) => {
     if (!log) return
     setExporting(true)
     try {
-      await generateDailyLogPdf(log)
+      await generateDailyLogPdf({ log, photos })
     } catch (err) {
       console.error('Failed to export PDF:', err)
       alert('Failed to export PDF. Please try again.')
