@@ -211,6 +211,26 @@ export interface SubLinkDB extends DBSchema {
     }
     indexes: { 'by-status': string, 'by-project': string }
   }
+  mileageEntries: {
+    key: string
+    value: {
+      id: string
+      projectId?: string
+      projectName?: string
+      date: string
+      startLocation: string
+      endLocation: string
+      startCoords?: { lat: number; lng: number }
+      endCoords?: { lat: number; lng: number }
+      miles: number
+      purpose?: string
+      notes?: string
+      isRoundTrip: boolean
+      createdAt: number
+      updatedAt: number
+    }
+    indexes: { 'by-project': string, 'by-date': string }
+  }
 }
 
 export type Project = SubLinkDB['projects']['value']
@@ -224,11 +244,12 @@ export type Invoice = SubLinkDB['invoices']['value']
 export type Expense = SubLinkDB['expenses']['value']
 export type Payment = SubLinkDB['payments']['value']
 export type Estimate = SubLinkDB['estimates']['value']
+export type MileageEntry = SubLinkDB['mileageEntries']['value']
 
 let db: IDBPDatabase<SubLinkDB>
 
 export const initDB = async () => {
-  db = await openDB<SubLinkDB>('sublink-db', 10, {
+  db = await openDB<SubLinkDB>('sublink-db', 11, {
     upgrade(db, oldVersion) {
       if (oldVersion < 1) {
         db.createObjectStore('waivers', {
@@ -294,6 +315,13 @@ export const initDB = async () => {
         })
         estimateStore.createIndex('by-status', 'status')
         estimateStore.createIndex('by-project', 'projectId')
+      }
+      if (oldVersion < 11) {
+        const mileageStore = db.createObjectStore('mileageEntries', {
+          keyPath: 'id',
+        })
+        mileageStore.createIndex('by-project', 'projectId')
+        mileageStore.createIndex('by-date', 'date')
       }
     },
   })
@@ -391,6 +419,7 @@ export const clearDatabase = async () => {
   await db.clear('expenses')
   await db.clear('payments')
   await db.clear('estimates')
+  await db.clear('mileageEntries')
 }
 
 export const saveProject = async (project: Omit<SubLinkDB['projects']['value'], 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -800,8 +829,47 @@ export const getRecentEstimates = async (limit: number = 5): Promise<Estimate[]>
   return estimates.sort((a, b) => b.createdAt - a.createdAt).slice(0, limit)
 }
 
+export const saveMileage = async (mileage: Omit<MileageEntry, 'id' | 'createdAt' | 'updatedAt'>): Promise<{ id: string }> => {
+  const id = crypto.randomUUID()
+  const now = Date.now()
+  await db.put('mileageEntries', { ...mileage, id, createdAt: now, updatedAt: now })
+  return { id }
+}
+
+export const getMileage = async (id: string): Promise<MileageEntry | undefined> => {
+  return await db.get('mileageEntries', id)
+}
+
+export const getAllMileage = async (): Promise<MileageEntry[]> => {
+  return await db.getAll('mileageEntries')
+}
+
+export const updateMileage = async (id: string, updates: Partial<Omit<MileageEntry, 'id' | 'createdAt'>>): Promise<void> => {
+  const existing = await db.get('mileageEntries', id)
+  if (!existing) throw new Error('Mileage entry not found')
+  await db.put('mileageEntries', { ...existing, ...updates, updatedAt: Date.now() })
+}
+
+export const deleteMileage = async (id: string): Promise<void> => {
+  await db.delete('mileageEntries', id)
+}
+
+export const getMileageByProject = async (projectId: string): Promise<MileageEntry[]> => {
+  return await db.getAllFromIndex('mileageEntries', 'by-project', projectId)
+}
+
+export const getMileageByDateRange = async (startDate: string, endDate: string): Promise<MileageEntry[]> => {
+  const allMileage = await db.getAll('mileageEntries')
+  return allMileage.filter(entry => entry.date >= startDate && entry.date <= endDate)
+}
+
+export const getRecentMileage = async (limit: number = 5): Promise<MileageEntry[]> => {
+  const mileage = await db.getAll('mileageEntries')
+  return mileage.sort((a, b) => b.createdAt - a.createdAt).slice(0, limit)
+}
+
 export const exportAllData = async () => {
-  const [projects, waivers, certificates, tasks, photos, dailyLogs, timeEntries, invoices, expenses, payments, estimates] = await Promise.all([
+  const [projects, waivers, certificates, tasks, photos, dailyLogs, timeEntries, invoices, expenses, payments, estimates, mileageEntries] = await Promise.all([
     db.getAll('projects'),
     db.getAll('waivers'),
     db.getAll('certificates'),
@@ -813,6 +881,7 @@ export const exportAllData = async () => {
     db.getAll('expenses'),
     db.getAll('payments'),
     db.getAll('estimates'),
+    db.getAll('mileageEntries'),
   ])
   
   return {
@@ -827,10 +896,11 @@ export const exportAllData = async () => {
     expenses,
     payments,
     estimates,
+    mileageEntries,
   }
 }
 
-type StoreName = 'projects' | 'waivers' | 'certificates' | 'tasks' | 'photos' | 'dailyLogs' | 'timeEntries' | 'invoices' | 'expenses' | 'payments' | 'estimates'
+type StoreName = 'projects' | 'waivers' | 'certificates' | 'tasks' | 'photos' | 'dailyLogs' | 'timeEntries' | 'invoices' | 'expenses' | 'payments' | 'estimates' | 'mileageEntries'
 
 export interface RestoreData {
   projects?: SubLinkDB['projects']['value'][]
@@ -844,6 +914,7 @@ export interface RestoreData {
   expenses?: SubLinkDB['expenses']['value'][]
   payments?: SubLinkDB['payments']['value'][]
   estimates?: SubLinkDB['estimates']['value'][]
+  mileageEntries?: SubLinkDB['mileageEntries']['value'][]
 }
 
 export const restoreData = async (data: RestoreData, mode: 'replace' | 'merge' = 'replace'): Promise<void> => {
@@ -851,7 +922,7 @@ export const restoreData = async (data: RestoreData, mode: 'replace' | 'merge' =
     await clearDatabase()
   }
   
-  const stores: StoreName[] = ['projects', 'waivers', 'certificates', 'tasks', 'photos', 'dailyLogs', 'timeEntries', 'invoices', 'expenses', 'payments', 'estimates']
+  const stores: StoreName[] = ['projects', 'waivers', 'certificates', 'tasks', 'photos', 'dailyLogs', 'timeEntries', 'invoices', 'expenses', 'payments', 'estimates', 'mileageEntries']
   
   for (const storeName of stores) {
     const items = data[storeName]

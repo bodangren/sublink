@@ -34,9 +34,14 @@ import EstimateList from './components/EstimateList'
 import EstimateDetail from './components/EstimateDetail'
 import RecentEstimates from './components/RecentEstimates'
 import RecentPayments from './components/RecentPayments'
+import RecentMileage from './components/RecentMileage'
+import MileageList from './components/MileageList'
+import MileageForm from './components/MileageForm'
+import MileageDetail from './components/MileageDetail'
+import MileageSummary from './components/MileageSummary'
 import Settings from './components/Settings'
-import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLogs, getProjects, getTimeEntry, getInvoice, getExpense, getEstimates } from './db'
-import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry, Invoice, Expense, Estimate } from './db'
+import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLogs, getProjects, getTimeEntry, getInvoice, getExpense, getEstimates, getAllMileage } from './db'
+import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry, Invoice, Expense, Estimate, MileageEntry } from './db'
 import { getCOIStatus, getStatusColor, getStatusLabel } from './utils/coiStatus'
 import { useItemId, useTaskIdFromPath, useEditItem, formatCurrency } from './hooks/useEditWrapper'
 import { ConfirmProvider, useConfirm } from './hooks/useConfirm'
@@ -54,6 +59,7 @@ const Home = () => {
       <RecentTasks />
       <RecentWaivers />
       <RecentExpenses />
+      <RecentMileage />
       <RecentEstimates />
       <RecentPayments />
       <RecentInvoices />
@@ -72,6 +78,9 @@ const Home = () => {
         </NavLink>
         <NavLink to="/compliance/new">
           <button style={{ marginTop: '0.5rem' }}>Add Certificate</button>
+        </NavLink>
+        <NavLink to="/mileage/new">
+          <button style={{ marginTop: '0.5rem' }}>Log Mileage</button>
         </NavLink>
       </div>
     </div>
@@ -434,6 +443,28 @@ const EstimateEditWrapper = () => {
   }} />
 }
 
+const MileageEditWrapper = () => {
+  const id = useItemId() || ''
+  const { item: mileage, loading } = useEditItem<MileageEntry>(id, getAllMileage, (m: MileageEntry, id: string) => m.id === id)
+
+  if (loading) return <div className="container"><p>Loading...</p></div>
+  if (!mileage) return <div className="container"><p>Mileage entry not found.</p></div>
+
+  return <MileageForm editId={id} initialData={{ 
+    projectId: mileage.projectId || '',
+    projectName: mileage.projectName || '',
+    date: mileage.date,
+    startLocation: mileage.startLocation,
+    endLocation: mileage.endLocation,
+    startCoords: mileage.startCoords,
+    endCoords: mileage.endCoords,
+    miles: mileage.miles.toString(),
+    purpose: mileage.purpose || '',
+    notes: mileage.notes || '',
+    isRoundTrip: mileage.isRoundTrip,
+  }} />
+}
+
 const AppShell = () => (
   <div className="app-shell">
     <div className="content">
@@ -471,6 +502,11 @@ const AppShell = () => (
         <Route path="/estimates/new" element={<EstimateForm />} />
         <Route path="/estimates/edit/:id" element={<EstimateEditWrapper />} />
         <Route path="/estimates/:id" element={<EstimateDetailWrapper />} />
+        <Route path="/mileage" element={<MileageList />} />
+        <Route path="/mileage/new" element={<MileageForm />} />
+        <Route path="/mileage/edit/:id" element={<MileageEditWrapper />} />
+        <Route path="/mileage/:id" element={<MileageDetail />} />
+        <Route path="/mileage/summary" element={<MileageSummary />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
     </div>

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { initDB, saveTask, getTasks, getTask, updateTask, deleteTask, savePhoto, getPhotosByTask, deletePhotosByTask, clearDatabase, saveDailyLog, getDailyLogs, getDailyLog, updateDailyLog, deleteDailyLog, getDailyLogByDate, saveProject, getProjects, getProject, updateProject, deleteProject, getTasksByProject, getDailyLogsByProject, saveInvoice, getInvoices, getInvoice, updateInvoice, deleteInvoice, getNextInvoiceNumber, getUnpaidInvoices, markInvoicePaid, exportAllData, restoreData, saveExpense, getExpenses, getExpense, updateExpense, deleteExpense, getExpensesByProject, getExpensesByInvoice, getBillableExpenses, linkExpenseToInvoice, getTotalExpensesByProject, getPhotosByDailyLog, getPhotoCountByDailyLog, saveEstimate, getEstimates, getEstimate, updateEstimate, deleteEstimate, updateEstimateStatus, convertEstimateToInvoice, getNextEstimateNumber, getRecentEstimates } from './db'
+import { initDB, saveTask, getTasks, getTask, updateTask, deleteTask, savePhoto, getPhotosByTask, deletePhotosByTask, clearDatabase, saveDailyLog, getDailyLogs, getDailyLog, updateDailyLog, deleteDailyLog, getDailyLogByDate, saveProject, getProjects, getProject, updateProject, deleteProject, getTasksByProject, getDailyLogsByProject, saveInvoice, getInvoices, getInvoice, updateInvoice, deleteInvoice, getNextInvoiceNumber, getUnpaidInvoices, markInvoicePaid, exportAllData, restoreData, saveExpense, getExpenses, getExpense, updateExpense, deleteExpense, getExpensesByProject, getExpensesByInvoice, getBillableExpenses, linkExpenseToInvoice, getTotalExpensesByProject, getPhotosByDailyLog, getPhotoCountByDailyLog, saveEstimate, getEstimates, getEstimate, updateEstimate, deleteEstimate, updateEstimateStatus, convertEstimateToInvoice, getNextEstimateNumber, getRecentEstimates, saveMileage, getMileage, getAllMileage, updateMileage, deleteMileage, getMileageByProject, getMileageByDateRange, getRecentMileage } from './db'
 import type { InvoiceLineItem, EstimateLineItem } from './db'
 import 'fake-indexeddb/auto'
 
@@ -1729,3 +1729,281 @@ describe('Estimate database operations', () => {
     })
   })
 })
+
+describe('Mileage database operations', () => {
+  beforeEach(async () => {
+    await initDB()
+    await clearDatabase()
+  })
+
+  describe('saveMileage', () => {
+      it('creates a new mileage entry with generated id', async () => {
+        const result = await saveMileage({
+          projectId: 'project-1',
+          projectName: 'Test Project',
+          date: '2024-03-10',
+          startLocation: 'Office',
+          endLocation: 'Job Site',
+          miles: 25.5,
+          purpose: 'Site inspection',
+          isRoundTrip: false,
+        })
+
+        expect(result.id).toBeDefined()
+        expect(typeof result.id).toBe('string')
+
+        const entry = await getMileage(result.id)
+        expect(entry).toBeDefined()
+        expect(entry?.projectId).toBe('project-1')
+        expect(entry?.projectName).toBe('Test Project')
+        expect(entry?.date).toBe('2024-03-10')
+        expect(entry?.startLocation).toBe('Office')
+        expect(entry?.endLocation).toBe('Job Site')
+        expect(entry?.miles).toBe(25.5)
+        expect(entry?.purpose).toBe('Site inspection')
+        expect(entry?.isRoundTrip).toBe(false)
+        expect(entry?.createdAt).toBeDefined()
+        expect(entry?.updatedAt).toBeDefined()
+      })
+
+      it('saves mileage entry with coordinates', async () => {
+        const result = await saveMileage({
+          date: '2024-03-10',
+          startLocation: 'Office',
+          endLocation: 'Site',
+          startCoords: { lat: 40.7128, lng: -74.0060 },
+          endCoords: { lat: 40.7589, lng: -73.9851 },
+          miles: 10,
+          isRoundTrip: false,
+        })
+
+        const entry = await getMileage(result.id)
+        expect(entry?.startCoords).toEqual({ lat: 40.7128, lng: -74.0060 })
+        expect(entry?.endCoords).toEqual({ lat: 40.7589, lng: -73.9851 })
+      })
+
+      it('saves round trip mileage', async () => {
+        const result = await saveMileage({
+          date: '2024-03-10',
+          startLocation: 'Office',
+          endLocation: 'Site',
+          miles: 50,
+          isRoundTrip: true,
+        })
+
+        const entry = await getMileage(result.id)
+        expect(entry?.isRoundTrip).toBe(true)
+      })
+    })
+
+    describe('getMileage', () => {
+      it('retrieves existing mileage entry', async () => {
+        const result = await saveMileage({
+          date: '2024-03-10',
+          startLocation: 'A',
+          endLocation: 'B',
+          miles: 15,
+          isRoundTrip: false,
+        })
+
+        const entry = await getMileage(result.id)
+        expect(entry).toBeDefined()
+        expect(entry?.id).toBe(result.id)
+      })
+
+      it('returns undefined for non-existent entry', async () => {
+        const entry = await getMileage('non-existent-id')
+        expect(entry).toBeUndefined()
+      })
+    })
+
+    describe('getAllMileage', () => {
+      it('retrieves all mileage entries', async () => {
+        await saveMileage({
+          date: '2024-03-10',
+          startLocation: 'A',
+          endLocation: 'B',
+          miles: 10,
+          isRoundTrip: false,
+        })
+        await saveMileage({
+          date: '2024-03-11',
+          startLocation: 'C',
+          endLocation: 'D',
+          miles: 20,
+          isRoundTrip: false,
+        })
+
+        const entries = await getAllMileage()
+        expect(entries.length).toBe(2)
+      })
+    })
+
+    describe('updateMileage', () => {
+      it('updates existing mileage entry', async () => {
+        const result =         await saveMileage({
+          date: '2024-03-10',
+          startLocation: 'A',
+          endLocation: 'B',
+          miles: 10,
+          isRoundTrip: false,
+        })
+
+        await new Promise(resolve => setTimeout(resolve, 10))
+        await updateMileage(result.id, {
+          miles: 15,
+          purpose: 'Updated purpose',
+        })
+
+        const entry = await getMileage(result.id)
+        expect(entry?.miles).toBe(15)
+        expect(entry?.purpose).toBe('Updated purpose')
+        expect(entry?.startLocation).toBe('A')
+        expect(entry?.updatedAt).toBeGreaterThan(entry!.createdAt)
+      })
+
+      it('throws error for non-existent entry', async () => {
+        await expect(updateMileage('non-existent-id', { miles: 20 })).rejects.toThrow('Mileage entry not found')
+      })
+    })
+
+    describe('deleteMileage', () => {
+      it('deletes existing mileage entry', async () => {
+        const result = await saveMileage({
+          date: '2024-03-10',
+          startLocation: 'A',
+          endLocation: 'B',
+          miles: 10,
+          isRoundTrip: false,
+        })
+
+        await deleteMileage(result.id)
+
+        const entry = await getMileage(result.id)
+        expect(entry).toBeUndefined()
+      })
+    })
+
+    describe('getMileageByProject', () => {
+      it('retrieves mileage entries by project', async () => {
+        await saveMileage({
+          projectId: 'project-1',
+          date: '2024-03-10',
+          startLocation: 'A',
+          endLocation: 'B',
+          miles: 10,
+          isRoundTrip: false,
+        })
+        await saveMileage({
+          projectId: 'project-1',
+          date: '2024-03-11',
+          startLocation: 'C',
+          endLocation: 'D',
+          miles: 20,
+          isRoundTrip: false,
+        })
+        await saveMileage({
+          projectId: 'project-2',
+          date: '2024-03-12',
+          startLocation: 'E',
+          endLocation: 'F',
+          miles: 30,
+          isRoundTrip: false,
+        })
+
+        const entries = await getMileageByProject('project-1')
+        expect(entries.length).toBe(2)
+        expect(entries.every(e => e.projectId === 'project-1')).toBe(true)
+      })
+    })
+
+    describe('getMileageByDateRange', () => {
+      it('retrieves mileage entries within date range', async () => {
+        await saveMileage({
+          date: '2024-03-01',
+          startLocation: 'A',
+          endLocation: 'B',
+          miles: 10,
+          isRoundTrip: false,
+        })
+        await saveMileage({
+          date: '2024-03-15',
+          startLocation: 'C',
+          endLocation: 'D',
+          miles: 20,
+          isRoundTrip: false,
+        })
+        await saveMileage({
+          date: '2024-03-31',
+          startLocation: 'E',
+          endLocation: 'F',
+          miles: 30,
+          isRoundTrip: false,
+        })
+
+        const entries = await getMileageByDateRange('2024-03-10', '2024-03-20')
+        expect(entries.length).toBe(1)
+        expect(entries[0].date).toBe('2024-03-15')
+      })
+
+      it('includes entries on boundary dates', async () => {
+        await saveMileage({
+          date: '2024-03-10',
+          startLocation: 'A',
+          endLocation: 'B',
+          miles: 10,
+          isRoundTrip: false,
+        })
+        await saveMileage({
+          date: '2024-03-20',
+          startLocation: 'C',
+          endLocation: 'D',
+          miles: 20,
+          isRoundTrip: false,
+        })
+
+        const entries = await getMileageByDateRange('2024-03-10', '2024-03-20')
+        expect(entries.length).toBe(2)
+      })
+    })
+
+    describe('getRecentMileage', () => {
+      it('retrieves most recent mileage entries', async () => {
+        await saveMileage({
+          date: '2024-03-01',
+          startLocation: 'A',
+          endLocation: 'B',
+          miles: 10,
+          isRoundTrip: false,
+        })
+        await new Promise(resolve => setTimeout(resolve, 10))
+        await saveMileage({
+          date: '2024-03-02',
+          startLocation: 'C',
+          endLocation: 'D',
+          miles: 20,
+          isRoundTrip: false,
+        })
+
+        const entries = await getRecentMileage(5)
+        expect(entries.length).toBe(2)
+        expect(entries[0].date).toBe('2024-03-02')
+        expect(entries[1].date).toBe('2024-03-01')
+      })
+
+      it('respects limit parameter', async () => {
+        for (let i = 0; i < 10; i++) {
+          await saveMileage({
+            date: `2024-03-${String(i + 1).padStart(2, '0')}`,
+            startLocation: `Location ${i}`,
+            endLocation: `Destination ${i}`,
+            miles: i * 5,
+            isRoundTrip: false,
+          })
+        }
+
+        const entries = await getRecentMileage(3)
+        expect(entries.length).toBe(3)
+      })
+    })
+  })

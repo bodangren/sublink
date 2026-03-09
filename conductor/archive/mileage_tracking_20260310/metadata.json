@@ -1,0 +1,23 @@
+{
+  "id": "mileage_tracking_20260310",
+  "title": "Mileage Tracking - Track Travel for Tax Deductions",
+  "type": "feature",
+  "status": "pending",
+  "created": "2026-03-10T02:00:00Z",
+  "priority": "high",
+  "labels": ["feature", "tax", "project-management", "offline-first"],
+  "description": "Add mileage tracking capability to allow subcontractors to record and track miles driven for each project. Enables tax deduction tracking and travel expense management with GPS-based location capture.",
+  "acceptance_criteria": [
+    "Users can create mileage entries with start/end locations, date, project association, and purpose",
+    "Mileage entries can be manually entered or calculated from GPS coordinates",
+    "Mileage list view shows all entries with filtering by project and date range",
+    "Mileage summary view shows totals by project, month, and year",
+    "Mileage report can be exported as PDF for tax purposes",
+    "All data persists in IndexedDB for offline functionality",
+    "Mileage entries are editable and deletable",
+    "Dashboard includes quick link to recent mileage entries"
+  ],
+  "estimated_effort": "medium",
+  "dependencies": [],
+  "model": "glm-5"
+}
