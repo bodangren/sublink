@@ -29,10 +29,14 @@ import ExpenseForm from './components/ExpenseForm'
 import ExpenseList from './components/ExpenseList'
 import ExpenseDetail from './components/ExpenseDetail'
 import RecentExpenses from './components/RecentExpenses'
+import EstimateForm from './components/EstimateForm'
+import EstimateList from './components/EstimateList'
+import EstimateDetail from './components/EstimateDetail'
+import RecentEstimates from './components/RecentEstimates'
 import RecentPayments from './components/RecentPayments'
 import Settings from './components/Settings'
-import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLogs, getProjects, getTimeEntry, getInvoice, getExpense } from './db'
-import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry, Invoice, Expense } from './db'
+import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLogs, getProjects, getTimeEntry, getInvoice, getExpense, getEstimates } from './db'
+import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry, Invoice, Expense, Estimate } from './db'
 import { getCOIStatus, getStatusColor, getStatusLabel } from './utils/coiStatus'
 import { useItemId, useTaskIdFromPath, useEditItem, formatCurrency } from './hooks/useEditWrapper'
 import { ConfirmProvider, useConfirm } from './hooks/useConfirm'
@@ -50,6 +54,7 @@ const Home = () => {
       <RecentTasks />
       <RecentWaivers />
       <RecentExpenses />
+      <RecentEstimates />
       <RecentPayments />
       <RecentInvoices />
       <div style={{ marginTop: '2rem' }}>
@@ -399,6 +404,36 @@ const ExpenseEditWrapper = () => {
   }} />
 }
 
+const EstimateDetailWrapper = () => {
+  const id = useItemId() || ''
+  return <EstimateDetail estimateId={id} />
+}
+
+const EstimateEditWrapper = () => {
+  const id = useItemId() || ''
+  const { item: estimate, loading } = useEditItem<Estimate>(id, getEstimates, (e: Estimate, id: string) => e.id === id)
+
+  if (loading) return <div className="container"><p>Loading...</p></div>
+  if (!estimate) return <div className="container"><p>Estimate not found.</p></div>
+
+  return <EstimateForm editId={id} initialData={{ 
+    projectId: estimate.projectId || '',
+    projectName: estimate.projectName || '',
+    clientName: estimate.clientName,
+    clientEmail: estimate.clientEmail || '',
+    clientAddress: estimate.clientAddress || '',
+    issueDate: estimate.issueDate,
+    validUntilDate: estimate.validUntilDate,
+    lineItems: estimate.lineItems,
+    subtotal: estimate.subtotal,
+    taxRate: estimate.taxRate,
+    taxAmount: estimate.taxAmount,
+    total: estimate.total,
+    notes: estimate.notes || '',
+    status: estimate.status,
+  }} />
+}
+
 const AppShell = () => (
   <div className="app-shell">
     <div className="content">
@@ -432,6 +467,10 @@ const AppShell = () => (
         <Route path="/expenses/new" element={<ExpenseForm />} />
         <Route path="/expenses/edit/:id" element={<ExpenseEditWrapper />} />
         <Route path="/expenses/:id" element={<ExpenseDetailWrapper />} />
+        <Route path="/estimates" element={<EstimateList />} />
+        <Route path="/estimates/new" element={<EstimateForm />} />
+        <Route path="/estimates/edit/:id" element={<EstimateEditWrapper />} />
+        <Route path="/estimates/:id" element={<EstimateDetailWrapper />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
     </div>

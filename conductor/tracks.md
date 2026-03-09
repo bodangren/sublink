@@ -34,3 +34,5 @@ This file tracks all major tracks for the project. Each track has its own detail
   *Link: [./archive/payment_tracking_20260309/](./archive/payment_tracking_20260309/)*
 - [x] **Track: Daily Log Photo Attachments - Implement Missing Feature.**
   *Link: [./archive/daily_log_photo_attachments_20260309/](./archive/daily_log_photo_attachments_20260309/)*
+- [x] **Track: Estimates/Quotes - Create and Convert to Invoices.**
+  *Link: [./archive/estimates_20260309/](./archive/estimates_20260309/)*

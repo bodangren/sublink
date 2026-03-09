@@ -8,7 +8,6 @@
 |----|-------------|----------|--------|---------|
 | TD-001 | Inline styles throughout components - should use CSS classes | Medium | Open | 2026-03-08 |
 | TD-002 | No form validation feedback beyond `required` attribute | Low | Open | 2026-03-08 |
-| TD-006 | Daily log photo attachments - spec'd but never implemented | High | Tracked | 2026-03-09 |
 
 ## Resolved Items
 
@@ -17,8 +16,8 @@
 | TD-003 | `window.confirm` for deletions - replaced with ConfirmDialog | 2026-03-09 | cleanup_refactor_20260309 |
 | TD-004 | Duplicate edit wrapper pattern in App.tsx | 2026-03-08 | cleanup_refactor_20260308 |
 | TD-005 | parseInt without NaN validation | 2026-03-08 | cleanup_refactor_20260308 |
+| TD-006 | Daily log photo attachments - spec'd but never implemented | 2026-03-09 | daily_log_photo_attachments_20260309 |
 
 ## Notes
 - TD-001: Consider CSS modules or styled components in future refactor
 - TD-002: Could integrate react-hook-form for better validation UX
-- TD-006: Track created at tracks/daily_log_photo_attachments_20260309/ - infrastructure exists, implementation straightforward

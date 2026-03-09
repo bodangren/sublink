@@ -5,10 +5,11 @@
 SubLink is a local-first mobile Progressive Web App (PWA) designed for subcontractors in the construction industry. It streamlines compliance, proof-of-work, and financial documentation directly from the job site.
 
 ### Key Features
-- **Information-Rich Dashboard:** At-a-glance overview of your operations with real-time stats, daily log status, COI expiration alerts, and recent activity feeds. Stay on top of your business without navigating through multiple screens.
-- **Project Management:** Organize all your work by project. Create projects with client info, contract values, and dates. View project details with related tasks, daily logs, and waivers all in one place.
+- **Information-Rich Dashboard:** At-a-glance overview of your operations with real-time stats, daily log status, COI expiration alerts, and recent activity feeds including estimates, invoices, and payments. Stay on top of your business without navigating through multiple screens.
+- **Project Management:** Organize all your work by project. Create projects with client info, contract values, and dates. View project details with related tasks, daily logs, and waivers, and estimates all in one place.
 - **Time Tracker:** Track billable hours with a live timer. Start/stop with one tap, add manual entries, and view time grouped by date or project. Perfect for accurate billing and time management.
-- **Invoicing:** Create professional invoices from time entries and custom line items. Add client details, apply taxes, and export PDFs. Track payment status (draft, pending, paid, overdue) to get paid faster.
+- **Invoicing:** Create professional invoices from time entries and expense line items, Add client details, apply taxes, and export PDFs. Track payment status (draft, pending, paid, overdue) to get paid faster.
+- **Estimates/Quotes:** Create professional estimates for prospective work. Add line items with descriptions, quantities, and and rates. Export as PDFs with "Valid Until" date prominently displayed. Convert accepted estimates directly to invoices with one click. Track estimate status (draft, sent, accepted, declined, converted).
 - **Payment Tracking:** Record payments received on invoices, including partial payments and multiple payment methods. View payment history and track outstanding balances. Dashboard shows recent payments at a glance.
 - **Daily Construction Logs:** Create professional daily logs with weather, work performed, personnel, delays, and equipment. Attach geotagged photos with timestamps for visual documentation. Export as PDFs for GC submission with embedded photo galleries. Never miss documenting a day's work again.
 - **Instant Lien Waivers:** Generate signed PDF lien waivers on-site. Capture signatures directly on your screen and export as standardized PDFs.

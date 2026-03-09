@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { initDB, saveTask, getTasks, getTask, updateTask, deleteTask, savePhoto, getPhotosByTask, deletePhotosByTask, clearDatabase, saveDailyLog, getDailyLogs, getDailyLog, updateDailyLog, deleteDailyLog, getDailyLogByDate, saveProject, getProjects, getProject, updateProject, deleteProject, getTasksByProject, getDailyLogsByProject, saveInvoice, getInvoices, getInvoice, updateInvoice, deleteInvoice, getNextInvoiceNumber, getUnpaidInvoices, markInvoicePaid, exportAllData, restoreData, saveExpense, getExpenses, getExpense, updateExpense, deleteExpense, getExpensesByProject, getExpensesByInvoice, getBillableExpenses, linkExpenseToInvoice, getTotalExpensesByProject, getPhotosByDailyLog, getPhotoCountByDailyLog } from './db'
-import type { InvoiceLineItem } from './db'
+import { initDB, saveTask, getTasks, getTask, updateTask, deleteTask, savePhoto, getPhotosByTask, deletePhotosByTask, clearDatabase, saveDailyLog, getDailyLogs, getDailyLog, updateDailyLog, deleteDailyLog, getDailyLogByDate, saveProject, getProjects, getProject, updateProject, deleteProject, getTasksByProject, getDailyLogsByProject, saveInvoice, getInvoices, getInvoice, updateInvoice, deleteInvoice, getNextInvoiceNumber, getUnpaidInvoices, markInvoicePaid, exportAllData, restoreData, saveExpense, getExpenses, getExpense, updateExpense, deleteExpense, getExpensesByProject, getExpensesByInvoice, getBillableExpenses, linkExpenseToInvoice, getTotalExpensesByProject, getPhotosByDailyLog, getPhotoCountByDailyLog, saveEstimate, getEstimates, getEstimate, updateEstimate, deleteEstimate, updateEstimateStatus, convertEstimateToInvoice, getNextEstimateNumber, getRecentEstimates } from './db'
+import type { InvoiceLineItem, EstimateLineItem } from './db'
 import 'fake-indexeddb/auto'
 
 describe('Task database operations', () => {
@@ -1358,6 +1358,7 @@ describe('Backup and Restore operations', () => {
       expect(data.timeEntries).toEqual([])
       expect(data.invoices).toEqual([])
       expect(data.expenses).toEqual([])
+      expect(data.estimates).toEqual([])
     })
 
     it('exports all data from all stores', async () => {
@@ -1415,6 +1416,316 @@ describe('Backup and Restore operations', () => {
       const projects = await getProjects()
       expect(projects.length).toBe(1)
       expect(projects[0].name).toBe('Existing Project')
+    })
+  })
+})
+
+describe('Estimate database operations', () => {
+  beforeEach(async () => {
+    await initDB()
+    await clearDatabase()
+  })
+
+  const createTestLineItems = (): EstimateLineItem[] => [
+    { id: '1', description: 'Labor', quantity: 8, rate: 75, amount: 600 },
+    { id: '2', description: 'Materials', quantity: 1, rate: 250, amount: 250 },
+  ]
+
+  describe('getNextEstimateNumber', () => {
+    it('returns EST-001 for first estimate', async () => {
+      const number = await getNextEstimateNumber()
+      expect(number).toBe('EST-001')
+    })
+
+    it('increments estimate number', async () => {
+      await saveEstimate({
+        clientName: 'Test Client',
+        issueDate: '2024-01-01',
+        validUntilDate: '2024-02-01',
+        lineItems: createTestLineItems(),
+        subtotal: 850,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 850,
+        status: 'draft',
+      })
+
+      const number = await getNextEstimateNumber()
+      expect(number).toBe('EST-002')
+    })
+  })
+
+  describe('saveEstimate', () => {
+    it('saves a new estimate and returns id and number', async () => {
+      const result = await saveEstimate({
+        clientName: 'John Smith',
+        clientEmail: 'john@example.com',
+        clientAddress: '123 Main St',
+        issueDate: '2024-01-15',
+        validUntilDate: '2024-02-15',
+        lineItems: createTestLineItems(),
+        subtotal: 850,
+        taxRate: 8.5,
+        taxAmount: 72.25,
+        total: 922.25,
+        notes: 'Test estimate',
+        status: 'draft',
+      })
+
+      expect(result.id).toBeDefined()
+      expect(result.estimateNumber).toBe('EST-001')
+    })
+
+    it('saves estimate with project reference', async () => {
+      const projectId = await saveProject({ name: 'Test Project' })
+
+      const result = await saveEstimate({
+        projectId,
+        projectName: 'Test Project',
+        clientName: 'Client',
+        issueDate: '2024-01-01',
+        validUntilDate: '2024-02-01',
+        lineItems: [],
+        subtotal: 0,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 0,
+        status: 'draft',
+      })
+
+      const estimate = await getEstimate(result.id)
+      expect(estimate?.projectId).toBe(projectId)
+    })
+  })
+
+  describe('getEstimates', () => {
+    it('returns empty array when no estimates exist', async () => {
+      const estimates = await getEstimates()
+      expect(estimates).toEqual([])
+    })
+
+    it('returns all saved estimates', async () => {
+      await saveEstimate({
+        clientName: 'Client 1',
+        issueDate: '2024-01-01',
+        validUntilDate: '2024-02-01',
+        lineItems: [],
+        subtotal: 100,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 100,
+        status: 'draft',
+      })
+      await saveEstimate({
+        clientName: 'Client 2',
+        issueDate: '2024-01-02',
+        validUntilDate: '2024-02-02',
+        lineItems: [],
+        subtotal: 200,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 200,
+        status: 'sent',
+      })
+
+      const estimates = await getEstimates()
+      expect(estimates.length).toBe(2)
+      expect(estimates.map(e => e.clientName)).toContain('Client 1')
+      expect(estimates.map(e => e.clientName)).toContain('Client 2')
+    })
+  })
+
+  describe('getEstimate', () => {
+    it('returns undefined for non-existent estimate', async () => {
+      const estimate = await getEstimate('non-existent')
+      expect(estimate).toBeUndefined()
+    })
+
+    it('returns the specific estimate by id', async () => {
+      const result = await saveEstimate({
+        clientName: 'Specific Client',
+        issueDate: '2024-01-01',
+        validUntilDate: '2024-02-01',
+        lineItems: createTestLineItems(),
+        subtotal: 850,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 850,
+        status: 'draft',
+      })
+
+      const estimate = await getEstimate(result.id)
+      expect(estimate).toBeDefined()
+      expect(estimate?.id).toBe(result.id)
+      expect(estimate?.clientName).toBe('Specific Client')
+      expect(estimate?.lineItems.length).toBe(2)
+    })
+  })
+
+  describe('updateEstimate', () => {
+    it('updates an existing estimate', async () => {
+      const result = await saveEstimate({
+        clientName: 'Original Name',
+        issueDate: '2024-01-01',
+        validUntilDate: '2024-02-01',
+        lineItems: [],
+        subtotal: 100,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 100,
+        status: 'draft',
+      })
+
+      await updateEstimate(result.id, { clientName: 'Updated Name', total: 150 })
+
+      const estimate = await getEstimate(result.id)
+      expect(estimate?.clientName).toBe('Updated Name')
+      expect(estimate?.total).toBe(150)
+    })
+
+    it('throws error for non-existent estimate', async () => {
+      await expect(updateEstimate('non-existent', { clientName: 'Test' })).rejects.toThrow('Estimate not found')
+    })
+  })
+
+  describe('deleteEstimate', () => {
+    it('deletes an existing estimate', async () => {
+      const result = await saveEstimate({
+        clientName: 'To Delete',
+        issueDate: '2024-01-01',
+        validUntilDate: '2024-02-01',
+        lineItems: [],
+        subtotal: 100,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 100,
+        status: 'draft',
+      })
+
+      await deleteEstimate(result.id)
+
+      const estimate = await getEstimate(result.id)
+      expect(estimate).toBeUndefined()
+    })
+  })
+
+  describe('updateEstimateStatus', () => {
+    it('updates estimate status', async () => {
+      const result = await saveEstimate({
+        clientName: 'Client',
+        issueDate: '2024-01-01',
+        validUntilDate: '2024-02-01',
+        lineItems: [],
+        subtotal: 100,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 100,
+        status: 'draft',
+      })
+
+      await updateEstimateStatus(result.id, 'accepted')
+
+      const estimate = await getEstimate(result.id)
+      expect(estimate?.status).toBe('accepted')
+    })
+  })
+
+  describe('convertEstimateToInvoice', () => {
+    it('converts estimate to invoice and updates status', async () => {
+      const estimateResult = await saveEstimate({
+        clientName: 'Invoice Client',
+        clientEmail: 'invoice@example.com',
+        clientAddress: '456 Oak Ave',
+        issueDate: '2024-01-01',
+        validUntilDate: '2024-02-01',
+        lineItems: createTestLineItems(),
+        subtotal: 850,
+        taxRate: 8.5,
+        taxAmount: 72.25,
+        total: 922.25,
+        notes: 'Convert to invoice',
+        status: 'accepted',
+      })
+
+      const invoiceResult = await convertEstimateToInvoice(estimateResult.id)
+
+      expect(invoiceResult.invoiceId).toBeDefined()
+      expect(invoiceResult.invoiceNumber).toMatch(/^INV-\d{3}$/)
+
+      const estimate = await getEstimate(estimateResult.id)
+      expect(estimate?.status).toBe('converted')
+      expect(estimate?.convertedToInvoiceId).toBe(invoiceResult.invoiceId)
+
+      const invoice = await getInvoice(invoiceResult.invoiceId)
+      expect(invoice).toBeDefined()
+      expect(invoice?.clientName).toBe('Invoice Client')
+      expect(invoice?.clientEmail).toBe('invoice@example.com')
+      expect(invoice?.total).toBe(922.25)
+      expect(invoice?.lineItems.length).toBe(2)
+      expect(invoice?.status).toBe('pending')
+    })
+
+    it('throws error for non-existent estimate', async () => {
+      await expect(convertEstimateToInvoice('non-existent')).rejects.toThrow('Estimate not found')
+    })
+  })
+
+  describe('getRecentEstimates', () => {
+    it('returns empty array when no estimates exist', async () => {
+      const estimates = await getRecentEstimates()
+      expect(estimates).toEqual([])
+    })
+
+    it('returns most recent estimates sorted by creation date', async () => {
+      await saveEstimate({
+        clientName: 'Old',
+        issueDate: '2024-01-01',
+        validUntilDate: '2024-02-01',
+        lineItems: [],
+        subtotal: 100,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 100,
+        status: 'draft',
+      })
+      
+      await new Promise(resolve => setTimeout(resolve, 10))
+      
+      await saveEstimate({
+        clientName: 'New',
+        issueDate: '2024-01-02',
+        validUntilDate: '2024-02-02',
+        lineItems: [],
+        subtotal: 200,
+        taxRate: 0,
+        taxAmount: 0,
+        total: 200,
+        status: 'draft',
+      })
+
+      const estimates = await getRecentEstimates(5)
+      expect(estimates.length).toBe(2)
+      expect(estimates[0].clientName).toBe('New')
+      expect(estimates[1].clientName).toBe('Old')
+    })
+
+    it('respects limit parameter', async () => {
+      for (let i = 0; i < 10; i++) {
+        await saveEstimate({
+          clientName: `Client ${i}`,
+          issueDate: '2024-01-01',
+          validUntilDate: '2024-02-01',
+          lineItems: [],
+          subtotal: 100,
+          taxRate: 0,
+          taxAmount: 0,
+          total: 100,
+          status: 'draft',
+        })
+      }
+
+      const estimates = await getRecentEstimates(3)
+      expect(estimates.length).toBe(3)
     })
   })
 })

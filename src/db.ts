@@ -3,6 +3,15 @@ import type { DBSchema, IDBPDatabase } from 'idb'
 
 export type ExpenseCategory = 'materials' | 'fuel' | 'equipment_rental' | 'subcontractor' | 'other'
 export type PaymentMethod = 'check' | 'cash' | 'ach' | 'credit_card' | 'other'
+export type EstimateStatus = 'draft' | 'sent' | 'accepted' | 'declined' | 'converted'
+
+export interface EstimateLineItem {
+  id: string
+  description: string
+  quantity: number
+  rate: number
+  amount: number
+}
 
 export interface InvoiceLineItem {
   id: string
@@ -177,6 +186,31 @@ export interface SubLinkDB extends DBSchema {
     }
     indexes: { 'by-invoice': string, 'by-date': string }
   }
+  estimates: {
+    key: string
+    value: {
+      id: string
+      estimateNumber: string
+      projectId?: string
+      projectName?: string
+      clientName: string
+      clientEmail?: string
+      clientAddress?: string
+      issueDate: string
+      validUntilDate: string
+      lineItems: EstimateLineItem[]
+      subtotal: number
+      taxRate: number
+      taxAmount: number
+      total: number
+      notes?: string
+      status: EstimateStatus
+      convertedToInvoiceId?: string
+      createdAt: number
+      updatedAt: number
+    }
+    indexes: { 'by-status': string, 'by-project': string }
+  }
 }
 
 export type Project = SubLinkDB['projects']['value']
@@ -189,11 +223,12 @@ export type TimeEntry = SubLinkDB['timeEntries']['value']
 export type Invoice = SubLinkDB['invoices']['value']
 export type Expense = SubLinkDB['expenses']['value']
 export type Payment = SubLinkDB['payments']['value']
+export type Estimate = SubLinkDB['estimates']['value']
 
 let db: IDBPDatabase<SubLinkDB>
 
 export const initDB = async () => {
-  db = await openDB<SubLinkDB>('sublink-db', 9, {
+  db = await openDB<SubLinkDB>('sublink-db', 10, {
     upgrade(db, oldVersion) {
       if (oldVersion < 1) {
         db.createObjectStore('waivers', {
@@ -252,6 +287,13 @@ export const initDB = async () => {
         })
         paymentStore.createIndex('by-invoice', 'invoiceId')
         paymentStore.createIndex('by-date', 'date')
+      }
+      if (oldVersion < 10) {
+        const estimateStore = db.createObjectStore('estimates', {
+          keyPath: 'id',
+        })
+        estimateStore.createIndex('by-status', 'status')
+        estimateStore.createIndex('by-project', 'projectId')
       }
     },
   })
@@ -348,6 +390,7 @@ export const clearDatabase = async () => {
   await db.clear('invoices')
   await db.clear('expenses')
   await db.clear('payments')
+  await db.clear('estimates')
 }
 
 export const saveProject = async (project: Omit<SubLinkDB['projects']['value'], 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -654,8 +697,111 @@ export const getRecentPayments = async (limit: number = 5): Promise<Payment[]> =
   return payments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, limit)
 }
 
+export const getNextEstimateNumber = async (): Promise<string> => {
+  const estimates = await db.getAll('estimates')
+  if (estimates.length === 0) {
+    return 'EST-001'
+  }
+  const numbers = estimates
+    .map(est => {
+      const match = est.estimateNumber.match(/EST-(\d+)/)
+      return match ? parseInt(match[1], 10) : 0
+    })
+    .filter(n => !isNaN(n))
+  const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0
+  return `EST-${String(maxNum + 1).padStart(3, '0')}`
+}
+
+export const saveEstimate = async (
+  estimate: Omit<SubLinkDB['estimates']['value'], 'id' | 'estimateNumber' | 'createdAt' | 'updatedAt'>
+): Promise<{ id: string; estimateNumber: string }> => {
+  const id = crypto.randomUUID()
+  const estimateNumber = await getNextEstimateNumber()
+  const now = Date.now()
+  await db.put('estimates', { ...estimate, id, estimateNumber, createdAt: now, updatedAt: now })
+  return { id, estimateNumber }
+}
+
+export const getEstimates = async (): Promise<Estimate[]> => {
+  return await db.getAll('estimates')
+}
+
+export const getEstimate = async (id: string): Promise<Estimate | undefined> => {
+  return await db.get('estimates', id)
+}
+
+export const updateEstimate = async (
+  id: string,
+  updates: Partial<Omit<SubLinkDB['estimates']['value'], 'id' | 'estimateNumber' | 'createdAt'>>
+): Promise<void> => {
+  const existing = await db.get('estimates', id)
+  if (!existing) throw new Error('Estimate not found')
+  await db.put('estimates', { ...existing, ...updates, updatedAt: Date.now() })
+}
+
+export const deleteEstimate = async (id: string): Promise<void> => {
+  await db.delete('estimates', id)
+}
+
+export const updateEstimateStatus = async (id: string, status: EstimateStatus): Promise<void> => {
+  const existing = await db.get('estimates', id)
+  if (!existing) throw new Error('Estimate not found')
+  await db.put('estimates', { ...existing, status, updatedAt: Date.now() })
+}
+
+export const convertEstimateToInvoice = async (estimateId: string): Promise<{ invoiceId: string; invoiceNumber: string }> => {
+  const estimate = await db.get('estimates', estimateId)
+  if (!estimate) throw new Error('Estimate not found')
+  
+  const invoiceLineItems: InvoiceLineItem[] = estimate.lineItems.map(item => ({
+    id: crypto.randomUUID(),
+    type: 'custom' as const,
+    description: item.description,
+    quantity: item.quantity,
+    rate: item.rate,
+    amount: item.amount,
+  }))
+  
+  const invoiceResult = await saveInvoice({
+    projectId: estimate.projectId,
+    projectName: estimate.projectName,
+    clientName: estimate.clientName,
+    clientEmail: estimate.clientEmail,
+    clientAddress: estimate.clientAddress,
+    issueDate: new Date().toISOString().split('T')[0],
+    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    lineItems: invoiceLineItems,
+    subtotal: estimate.subtotal,
+    taxRate: estimate.taxRate,
+    taxAmount: estimate.taxAmount,
+    total: estimate.total,
+    notes: estimate.notes,
+    status: 'pending',
+  })
+  
+  await updateEstimate(estimateId, {
+    status: 'converted',
+    convertedToInvoiceId: invoiceResult.id,
+  })
+  
+  return { invoiceId: invoiceResult.id, invoiceNumber: invoiceResult.invoiceNumber }
+}
+
+export const getEstimatesByStatus = async (status: EstimateStatus): Promise<Estimate[]> => {
+  return await db.getAllFromIndex('estimates', 'by-status', status)
+}
+
+export const getEstimatesByProject = async (projectId: string): Promise<Estimate[]> => {
+  return await db.getAllFromIndex('estimates', 'by-project', projectId)
+}
+
+export const getRecentEstimates = async (limit: number = 5): Promise<Estimate[]> => {
+  const estimates = await db.getAll('estimates')
+  return estimates.sort((a, b) => b.createdAt - a.createdAt).slice(0, limit)
+}
+
 export const exportAllData = async () => {
-  const [projects, waivers, certificates, tasks, photos, dailyLogs, timeEntries, invoices, expenses, payments] = await Promise.all([
+  const [projects, waivers, certificates, tasks, photos, dailyLogs, timeEntries, invoices, expenses, payments, estimates] = await Promise.all([
     db.getAll('projects'),
     db.getAll('waivers'),
     db.getAll('certificates'),
@@ -666,6 +812,7 @@ export const exportAllData = async () => {
     db.getAll('invoices'),
     db.getAll('expenses'),
     db.getAll('payments'),
+    db.getAll('estimates'),
   ])
   
   return {
@@ -679,10 +826,11 @@ export const exportAllData = async () => {
     invoices,
     expenses,
     payments,
+    estimates,
   }
 }
 
-type StoreName = 'projects' | 'waivers' | 'certificates' | 'tasks' | 'photos' | 'dailyLogs' | 'timeEntries' | 'invoices' | 'expenses' | 'payments'
+type StoreName = 'projects' | 'waivers' | 'certificates' | 'tasks' | 'photos' | 'dailyLogs' | 'timeEntries' | 'invoices' | 'expenses' | 'payments' | 'estimates'
 
 export interface RestoreData {
   projects?: SubLinkDB['projects']['value'][]
@@ -695,6 +843,7 @@ export interface RestoreData {
   invoices?: SubLinkDB['invoices']['value'][]
   expenses?: SubLinkDB['expenses']['value'][]
   payments?: SubLinkDB['payments']['value'][]
+  estimates?: SubLinkDB['estimates']['value'][]
 }
 
 export const restoreData = async (data: RestoreData, mode: 'replace' | 'merge' = 'replace'): Promise<void> => {
@@ -702,7 +851,7 @@ export const restoreData = async (data: RestoreData, mode: 'replace' | 'merge' =
     await clearDatabase()
   }
   
-  const stores: StoreName[] = ['projects', 'waivers', 'certificates', 'tasks', 'photos', 'dailyLogs', 'timeEntries', 'invoices', 'expenses', 'payments']
+  const stores: StoreName[] = ['projects', 'waivers', 'certificates', 'tasks', 'photos', 'dailyLogs', 'timeEntries', 'invoices', 'expenses', 'payments', 'estimates']
   
   for (const storeName of stores) {
     const items = data[storeName]
