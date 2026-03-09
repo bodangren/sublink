@@ -32,3 +32,5 @@ This file tracks all major tracks for the project. Each track has its own detail
   *Link: [./archive/data_backup_restore_20260308/](./archive/data_backup_restore_20260308/)*
 - [x] **Track: Payment Tracking - Record and Track Invoice Payments.**
   *Link: [./archive/payment_tracking_20260309/](./archive/payment_tracking_20260309/)*
+- [ ] **Track: Daily Log Photo Attachments - Implement Missing Feature.**
+  *Link: [./tracks/daily_log_photo_attachments_20260309/](./tracks/daily_log_photo_attachments_20260309/)*

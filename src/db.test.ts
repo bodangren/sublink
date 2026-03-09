@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { initDB, saveTask, getTasks, getTask, updateTask, deleteTask, savePhoto, getPhotosByTask, deletePhotosByTask, clearDatabase, saveDailyLog, getDailyLogs, getDailyLog, updateDailyLog, deleteDailyLog, getDailyLogByDate, saveProject, getProjects, getProject, updateProject, deleteProject, getTasksByProject, getDailyLogsByProject, saveInvoice, getInvoices, getInvoice, updateInvoice, deleteInvoice, getNextInvoiceNumber, getUnpaidInvoices, markInvoicePaid, exportAllData, restoreData, saveExpense, getExpenses, getExpense, updateExpense, deleteExpense, getExpensesByProject, getExpensesByInvoice, getBillableExpenses, linkExpenseToInvoice, getTotalExpensesByProject } from './db'
+import { initDB, saveTask, getTasks, getTask, updateTask, deleteTask, savePhoto, getPhotosByTask, deletePhotosByTask, clearDatabase, saveDailyLog, getDailyLogs, getDailyLog, updateDailyLog, deleteDailyLog, getDailyLogByDate, saveProject, getProjects, getProject, updateProject, deleteProject, getTasksByProject, getDailyLogsByProject, saveInvoice, getInvoices, getInvoice, updateInvoice, deleteInvoice, getNextInvoiceNumber, getUnpaidInvoices, markInvoicePaid, exportAllData, restoreData, saveExpense, getExpenses, getExpense, updateExpense, deleteExpense, getExpensesByProject, getExpensesByInvoice, getBillableExpenses, linkExpenseToInvoice, getTotalExpensesByProject, getPhotosByDailyLog, getPhotoCountByDailyLog } from './db'
 import type { InvoiceLineItem } from './db'
 import 'fake-indexeddb/auto'
 
@@ -485,6 +485,174 @@ describe('Daily Log database operations', () => {
       const log = await getDailyLogByDate('2026-03-08')
       expect(log).toBeDefined()
       expect(log?.project).toBe('March 8 Project')
+    })
+  })
+
+  describe('Daily Log Photo integration', () => {
+    it('saves daily log with photoIds', async () => {
+      const id = await saveDailyLog({
+        date: '2026-03-08',
+        project: 'Photo Test Project',
+        weather: 'Sunny',
+        workPerformed: 'Work with photos',
+        personnel: 'Team',
+        photoIds: ['photo-1', 'photo-2']
+      })
+
+      const log = await getDailyLog(id)
+      expect(log?.photoIds).toBeDefined()
+      expect(log?.photoIds).toEqual(['photo-1', 'photo-2'])
+    })
+
+    it('saves daily log without photoIds (optional field)', async () => {
+      const id = await saveDailyLog({
+        date: '2026-03-08',
+        project: 'No Photos Project',
+        weather: 'Cloudy',
+        workPerformed: 'Work without photos',
+        personnel: 'Team'
+      })
+
+      const log = await getDailyLog(id)
+      expect(log?.photoIds).toBeUndefined()
+    })
+
+    it('updates daily log with photoIds', async () => {
+      const id = await saveDailyLog({
+        date: '2026-03-08',
+        project: 'Update Test',
+        weather: 'Sunny',
+        workPerformed: 'Work',
+        personnel: 'Team'
+      })
+
+      await updateDailyLog(id, { photoIds: ['new-photo-1', 'new-photo-2'] })
+
+      const log = await getDailyLog(id)
+      expect(log?.photoIds).toEqual(['new-photo-1', 'new-photo-2'])
+    })
+  })
+
+  describe('getPhotosByDailyLog', () => {
+    let logId: string
+    let taskId: string
+
+    beforeEach(async () => {
+      taskId = await saveTask({ title: 'Task for photos', description: 'Test task' })
+      logId = await saveDailyLog({
+        date: '2026-03-08',
+        project: 'Photo Test',
+        weather: 'Sunny',
+        workPerformed: 'Work',
+        personnel: 'Team',
+        photoIds: []
+      })
+    })
+
+    it('returns empty array when no photos attached to log', async () => {
+      const photos = await getPhotosByDailyLog(logId)
+      expect(photos).toEqual([])
+    })
+
+    it('returns photos attached to daily log', async () => {
+      const photo1Id = await savePhoto({
+        taskId,
+        imageData: 'photo1-data',
+        capturedAt: Date.now(),
+        watermarkData: 'wm1'
+      })
+      const photo2Id = await savePhoto({
+        taskId,
+        imageData: 'photo2-data',
+        capturedAt: Date.now(),
+        watermarkData: 'wm2'
+      })
+
+      await updateDailyLog(logId, { photoIds: [photo1Id, photo2Id] })
+
+      const photos = await getPhotosByDailyLog(logId)
+      expect(photos.length).toBe(2)
+      expect(photos.map(p => p.imageData)).toContain('photo1-data')
+      expect(photos.map(p => p.imageData)).toContain('photo2-data')
+    })
+
+    it('does not return photos from other daily logs', async () => {
+      const otherLogId = await saveDailyLog({
+        date: '2026-03-07',
+        project: 'Other Project',
+        weather: 'Rainy',
+        workPerformed: 'Other work',
+        personnel: 'Other team',
+        photoIds: []
+      })
+
+      const photo1Id = await savePhoto({
+        taskId,
+        imageData: 'photo-for-log1',
+        capturedAt: Date.now(),
+        watermarkData: 'wm1'
+      })
+      const photo2Id = await savePhoto({
+        taskId,
+        imageData: 'photo-for-log2',
+        capturedAt: Date.now(),
+        watermarkData: 'wm2'
+      })
+
+      await updateDailyLog(logId, { photoIds: [photo1Id] })
+      await updateDailyLog(otherLogId, { photoIds: [photo2Id] })
+
+      const photos = await getPhotosByDailyLog(logId)
+      expect(photos.length).toBe(1)
+      expect(photos[0].imageData).toBe('photo-for-log1')
+    })
+  })
+
+  describe('getPhotoCountByDailyLog', () => {
+    let logId: string
+    let taskId: string
+
+    beforeEach(async () => {
+      taskId = await saveTask({ title: 'Task', description: 'Test' })
+      logId = await saveDailyLog({
+        date: '2026-03-08',
+        project: 'Count Test',
+        weather: 'Sunny',
+        workPerformed: 'Work',
+        personnel: 'Team',
+        photoIds: []
+      })
+    })
+
+    it('returns 0 when no photos attached', async () => {
+      const count = await getPhotoCountByDailyLog(logId)
+      expect(count).toBe(0)
+    })
+
+    it('returns correct count of attached photos', async () => {
+      const photo1Id = await savePhoto({
+        taskId,
+        imageData: 'photo1',
+        capturedAt: Date.now(),
+        watermarkData: 'wm1'
+      })
+      const photo2Id = await savePhoto({
+        taskId,
+        imageData: 'photo2',
+        capturedAt: Date.now(),
+        watermarkData: 'wm2'
+      })
+      const photo3Id = await savePhoto({
+        taskId,
+        imageData: 'photo3',
+        capturedAt: Date.now(),
+        watermarkData: 'wm3'
+      })
+
+      await updateDailyLog(logId, { photoIds: [photo1Id, photo2Id, photo3Id] })
+
+      const count = await getPhotoCountByDailyLog(logId)
+      expect(count).toBe(3)
     })
   })
 })

@@ -8,6 +8,7 @@
 |----|-------------|----------|--------|---------|
 | TD-001 | Inline styles throughout components - should use CSS classes | Medium | Open | 2026-03-08 |
 | TD-002 | No form validation feedback beyond `required` attribute | Low | Open | 2026-03-08 |
+| TD-006 | Daily log photo attachments - spec'd but never implemented | High | Tracked | 2026-03-09 |
 
 ## Resolved Items
 
@@ -20,3 +21,4 @@
 ## Notes
 - TD-001: Consider CSS modules or styled components in future refactor
 - TD-002: Could integrate react-hook-form for better validation UX
+- TD-006: Track created at tracks/daily_log_photo_attachments_20260309/ - infrastructure exists, implementation straightforward

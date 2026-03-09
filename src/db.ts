@@ -97,6 +97,7 @@ export interface SubLinkDB extends DBSchema {
       personnel: string
       equipment?: string
       notes?: string
+      photoIds?: string[]
       createdAt: number
       updatedAt: number
     }
@@ -417,6 +418,28 @@ export const deleteDailyLog = async (id: string) => {
 export const getDailyLogByDate = async (date: string) => {
   const logs = await db.getAll('dailyLogs')
   return logs.find(log => log.date === date)
+}
+
+export const getPhotosByDailyLog = async (logId: string) => {
+  const log = await db.get('dailyLogs', logId)
+  if (!log || !log.photoIds || log.photoIds.length === 0) {
+    return []
+  }
+  
+  const photos = await Promise.all(
+    log.photoIds.map(photoId => db.get('photos', photoId))
+  )
+  
+  return photos.filter((photo): photo is NonNullable<typeof photo> => photo !== undefined)
+    .sort((a, b) => a.capturedAt - b.capturedAt)
+}
+
+export const getPhotoCountByDailyLog = async (logId: string) => {
+  const log = await db.get('dailyLogs', logId)
+  if (!log || !log.photoIds) {
+    return 0
+  }
+  return log.photoIds.length
 }
 
 export const saveTimeEntry = async (entry: Omit<SubLinkDB['timeEntries']['value'], 'id' | 'createdAt' | 'updatedAt'>) => {

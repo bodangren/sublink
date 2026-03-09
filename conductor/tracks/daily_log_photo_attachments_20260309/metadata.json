@@ -1,0 +1,13 @@
+{
+  "id": "daily_log_photo_attachments_20260309",
+  "title": "Daily Log Photo Attachments - Implement Missing Feature",
+  "type": "feature",
+  "status": "pending",
+  "priority": "high",
+  "created": "2026-03-09",
+  "updated": "2026-03-09",
+  "description": "Add photo attachment functionality to daily construction logs as specified in original feature requirements",
+  "blocking": false,
+  "dependencies": [],
+  "estimatedEffort": "medium"
+}
