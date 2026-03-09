@@ -75,7 +75,7 @@ export interface SubLinkDB extends DBSchema {
     key: string
     value: {
       id: string
-      taskId: string
+      taskId?: string
       imageData: string
       latitude?: number
       longitude?: number

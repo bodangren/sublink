@@ -76,4 +76,16 @@ describe('DailyLogForm', () => {
     fireEvent.click(screen.getByText('Cancel'))
     expect(mockNavigate).toHaveBeenCalledWith('/logs')
   })
+
+  it('renders photo capture button', () => {
+    renderWithRouter(<DailyLogForm />)
+    
+    expect(screen.getByText(/capture photo/i)).toBeDefined()
+  })
+
+  it('shows site photos section', () => {
+    renderWithRouter(<DailyLogForm />)
+    
+    expect(screen.getByText(/site photos/i)).toBeDefined()
+  })
 })

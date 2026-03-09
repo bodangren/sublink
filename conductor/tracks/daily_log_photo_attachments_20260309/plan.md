@@ -10,12 +10,12 @@
 - [x] 1.7 Write tests for new database functions
 
 ## Phase 2: DailyLogForm Photo Integration
-- [ ] 2.1 Import and use `usePhotoCapture` hook in DailyLogForm
-- [ ] 2.2 Add file input and capture button to form UI
-- [ ] 2.3 Add photo preview/count section above form submit
-- [ ] 2.4 Update form submission to include photoIds array
-- [ ] 2.5 Add photo capture button styling (rugged/outdoor theme)
-- [ ] 2.6 Write tests for photo capture in form
+- [x] 2.1 Import and use photo capture functionality in DailyLogForm
+- [x] 2.2 Add file input and capture button to form UI
+- [x] 2.3 Add photo preview/count section above form submit
+- [x] 2.4 Update form submission to include photoIds array
+- [x] 2.5 Add photo capture button styling (rugged/outdoor theme)
+- [x] 2.6 Write tests for photo capture in form
 
 ## Phase 3: DailyLogDetail Photo Display
 - [ ] 3.1 Import `PhotoGallery` component

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { saveDailyLog, updateDailyLog, getProjects, getDailyLog } from '../db'
+import { useDailyLogPhotoCapture } from '../hooks/useDailyLogPhotoCapture'
 import type { Project } from '../db'
 
 interface DailyLogData {
@@ -41,6 +42,16 @@ const DailyLogForm = ({ editId, initialData }: DailyLogFormProps) => {
   })
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  const {
+    photos,
+    photoCount,
+    isCapturing,
+    error: captureError,
+    fileInputRef,
+    handleCapture,
+    getPhotoIds
+  } = useDailyLogPhotoCapture()
 
   useEffect(() => {
     getProjects().then(setProjects)
@@ -95,6 +106,7 @@ const DailyLogForm = ({ editId, initialData }: DailyLogFormProps) => {
     setError(null)
     
     try {
+      const photoIds = getPhotoIds()
       const logData = {
         date: formData.date,
         project: formData.project,
@@ -105,6 +117,7 @@ const DailyLogForm = ({ editId, initialData }: DailyLogFormProps) => {
         ...(formData.delays && { delays: formData.delays }),
         ...(formData.equipment && { equipment: formData.equipment }),
         ...(formData.notes && { notes: formData.notes }),
+        ...(photoIds.length > 0 && { photoIds }),
       }
       
       if (editId) {
@@ -226,6 +239,75 @@ const DailyLogForm = ({ editId, initialData }: DailyLogFormProps) => {
           placeholder="Any other relevant information..."
           rows={2}
         />
+
+        <div style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
+          <h3 style={{ marginBottom: '0.5rem', fontSize: '1rem' }}>Site Photos</h3>
+          
+          {captureError && (
+            <div style={{ backgroundColor: '#dc3545', color: '#fff', padding: '0.75rem', borderRadius: '4px', marginBottom: '1rem' }}>
+              {captureError}
+            </div>
+          )}
+          
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleCapture}
+            style={{ display: 'none' }}
+            id="photo-input"
+          />
+          
+          <label 
+            htmlFor="photo-input" 
+            style={{ 
+              display: 'inline-block',
+              backgroundColor: isCapturing ? '#666' : 'var(--accent-color)',
+              color: '#000',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '4px',
+              cursor: isCapturing ? 'not-allowed' : 'pointer',
+              fontSize: '1rem',
+              fontWeight: 'bold',
+              border: 'none',
+              minWidth: '44px',
+              minHeight: '44px',
+              textAlign: 'center'
+            }}
+          >
+            {isCapturing ? 'Capturing...' : '📸 Capture Photo'}
+          </label>
+          
+          {photoCount > 0 && (
+            <div style={{ marginTop: '1rem' }}>
+              <p style={{ marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                {photoCount} photo{photoCount !== 1 ? 's' : ''} captured
+              </p>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', 
+                gap: '0.5rem' 
+              }}>
+                {photos.map((photo) => (
+                  <div key={photo.id} style={{ position: 'relative' }}>
+                    <img 
+                      src={photo.imageData} 
+                      alt="Captured" 
+                      style={{ 
+                        width: '100%', 
+                        height: '100px', 
+                        objectFit: 'cover',
+                        borderRadius: '4px',
+                        border: '2px solid var(--accent-color)'
+                      }} 
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Saving...' : (editId ? 'Update Log' : 'Save Log')}
