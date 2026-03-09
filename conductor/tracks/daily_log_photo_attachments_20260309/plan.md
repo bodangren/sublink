@@ -25,7 +25,7 @@
 - [x] 3.5 Handle empty photo state
 - [x] 3.6 Write tests for photo display in detail view
 
-## Phase 4: PDF Photo Integration
+## Phase 4: PDF Photo Integration [checkpoint: b4bc2f2]
 - [x] 4.1 Update `generateDailyLogPdf` signature to accept photos
 - [x] 4.2 Add photo rendering function to dailyLogPdf.ts
 - [x] 4.3 Render photo thumbnails in grid layout
