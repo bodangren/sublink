@@ -142,7 +142,7 @@ export default function Settings() {
             {formatBackupDate(lastBackup.date)} (
             {lastBackup.summary.projects + lastBackup.summary.waivers + lastBackup.summary.certificates +
              lastBackup.summary.tasks + lastBackup.summary.photos + lastBackup.summary.dailyLogs +
-             lastBackup.summary.timeEntries + lastBackup.summary.invoices} records)
+             lastBackup.summary.timeEntries + lastBackup.summary.invoices + (lastBackup.summary.payments || 0)} records)
           </div>
         )}
 
@@ -229,6 +229,9 @@ export default function Settings() {
                   )}
                   {previewBackup.summary.invoices > 0 && (
                     <li>{previewBackup.summary.invoices} invoice{previewBackup.summary.invoices !== 1 ? 's' : ''}</li>
+                  )}
+                  {previewBackup.summary.payments > 0 && (
+                    <li>{previewBackup.summary.payments} payment{previewBackup.summary.payments !== 1 ? 's' : ''}</li>
                   )}
                 </ul>
 

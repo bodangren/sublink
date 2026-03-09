@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import InvoiceList from './InvoiceList'
-import { initDB, clearDatabase, saveInvoice } from '../db'
+import { initDB, clearDatabase, saveInvoice, savePayment } from '../db'
 import { ConfirmProvider } from '../hooks/useConfirm'
 import 'fake-indexeddb/auto'
 
@@ -87,7 +87,7 @@ describe('InvoiceList', () => {
       status: 'pending'
     })
 
-    await saveInvoice({
+    const paidInvoice = await saveInvoice({
       clientName: 'Paid Client',
       issueDate: '2026-03-08',
       dueDate: '2026-04-08',
@@ -96,7 +96,14 @@ describe('InvoiceList', () => {
       taxRate: 0,
       taxAmount: 0,
       total: 100,
-      status: 'paid'
+      status: 'pending'
+    })
+    
+    await savePayment({
+      invoiceId: paidInvoice.id,
+      amount: 100,
+      date: '2026-03-09',
+      method: 'check'
     })
     
     renderWithRouter(<InvoiceList />)

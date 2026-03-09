@@ -24,6 +24,7 @@ const mockBackupData: BackupData = {
   dailyLogs: [],
   timeEntries: [],
   invoices: [],
+  payments: [],
 }
 
 describe('dataBackup utilities', () => {
@@ -60,6 +61,7 @@ describe('dataBackup utilities', () => {
         dailyLogs: [],
         timeEntries: [],
         invoices: [],
+        payments: [],
       }
 
       const backup = await createBackupFile(data)
@@ -198,7 +200,7 @@ describe('dataBackup utilities', () => {
       
       localStorage.setItem('sublink_last_backup', JSON.stringify({
         date: oldDate.toISOString(),
-        summary: { projects: 0, waivers: 0, certificates: 0, tasks: 0, photos: 0, dailyLogs: 0, timeEntries: 0, invoices: 0 },
+        summary: { projects: 0, waivers: 0, certificates: 0, tasks: 0, photos: 0, dailyLogs: 0, timeEntries: 0, invoices: 0, payments: 0 },
       }))
 
       expect(daysSinceLastBackup()).toBe(5)

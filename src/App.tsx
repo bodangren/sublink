@@ -29,6 +29,7 @@ import ExpenseForm from './components/ExpenseForm'
 import ExpenseList from './components/ExpenseList'
 import ExpenseDetail from './components/ExpenseDetail'
 import RecentExpenses from './components/RecentExpenses'
+import RecentPayments from './components/RecentPayments'
 import Settings from './components/Settings'
 import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLogs, getProjects, getTimeEntry, getInvoice, getExpense } from './db'
 import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry, Invoice, Expense } from './db'
@@ -49,6 +50,7 @@ const Home = () => {
       <RecentTasks />
       <RecentWaivers />
       <RecentExpenses />
+      <RecentPayments />
       <RecentInvoices />
       <div style={{ marginTop: '2rem' }}>
         <NavLink to="/logs/new">

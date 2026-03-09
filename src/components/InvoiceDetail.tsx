@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, NavLink } from 'react-router-dom'
-import { getInvoice, markInvoicePaid, deleteInvoice } from '../db'
-import type { Invoice } from '../db'
+import { getInvoice, deleteInvoice, getTotalPaidByInvoice } from '../db'
+import type { Invoice, Payment } from '../db'
 import { useConfirm } from '../hooks/useConfirm'
+import PaymentForm from './PaymentForm'
+import PaymentList from './PaymentList'
 
 const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('en-US', {
@@ -21,9 +23,9 @@ const getStatusColor = (status: string): string => {
   }
 }
 
-const getInvoiceStatus = (invoice: Invoice): string => {
-  if (invoice.status === 'paid') return 'paid'
+const getInvoiceStatus = (invoice: Invoice, totalPaid: number): string => {
   if (invoice.status === 'draft') return 'draft'
+  if (totalPaid >= invoice.total) return 'paid'
   const today = new Date().toISOString().split('T')[0]
   if (invoice.dueDate < today) return 'overdue'
   return 'pending'
@@ -34,36 +36,32 @@ const InvoiceDetail = () => {
   const navigate = useNavigate()
   const confirm = useConfirm()
   const [invoice, setInvoice] = useState<Invoice | null>(null)
+  const [totalPaid, setTotalPaid] = useState(0)
   const [loading, setLoading] = useState(true)
   const [downloading, setDownloading] = useState(false)
+  const [showPaymentForm, setShowPaymentForm] = useState(false)
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null)
+
+  const loadInvoice = async () => {
+    if (!id) return
+    const data = await getInvoice(id)
+    setInvoice(data || null)
+    if (data) {
+      const paid = await getTotalPaidByInvoice(id)
+      setTotalPaid(paid)
+    }
+    setLoading(false)
+  }
 
   useEffect(() => {
     let mounted = true
     if (id) {
-      getInvoice(id).then(data => {
-        if (mounted) {
-          setInvoice(data || null)
-          setLoading(false)
-        }
+      loadInvoice().then(() => {
+        if (!mounted) return
       })
     }
     return () => { mounted = false }
   }, [id])
-
-  const handleMarkPaid = async () => {
-    if (!invoice || !id) return
-    const confirmed = await confirm({
-      title: 'Mark as Paid',
-      message: 'Mark this invoice as paid?',
-      confirmLabel: 'Mark Paid',
-      variant: 'info'
-    })
-    if (confirmed) {
-      await markInvoicePaid(id)
-      const updated = await getInvoice(id)
-      setInvoice(updated || null)
-    }
-  }
 
   const handleDelete = async () => {
     if (!invoice || !id) return
@@ -93,6 +91,17 @@ const InvoiceDetail = () => {
     }
   }
 
+  const handlePaymentSuccess = async () => {
+    setShowPaymentForm(false)
+    setEditingPayment(null)
+    await loadInvoice()
+  }
+
+  const handleEditPayment = (payment: Payment) => {
+    setEditingPayment(payment)
+    setShowPaymentForm(true)
+  }
+
   if (loading) {
     return (
       <div className="container">
@@ -113,8 +122,9 @@ const InvoiceDetail = () => {
     )
   }
 
-  const status = getInvoiceStatus(invoice)
+  const status = getInvoiceStatus(invoice, totalPaid)
   const statusColor = getStatusColor(status)
+  const balance = invoice.total - totalPaid
 
   return (
     <div className="container">
@@ -147,6 +157,46 @@ const InvoiceDetail = () => {
         </div>
       </div>
 
+      <div style={{ backgroundColor: 'var(--secondary-bg)', padding: '1.25rem', borderRadius: '4px', marginBottom: '2rem' }}>
+        <h3 style={{ marginBottom: '1rem', fontSize: '0.875rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Payment Summary</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', textAlign: 'center' }}>
+          <div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Invoice Total</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{formatCurrency(invoice.total)}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Paid</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#28a745' }}>{formatCurrency(totalPaid)}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Balance Due</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: balance > 0 ? 'var(--accent-color)' : '#28a745' }}>
+              {formatCurrency(balance)}
+            </div>
+          </div>
+        </div>
+        {balance > 0 && (
+          <div style={{ marginTop: '1rem' }}>
+            <div style={{ 
+              backgroundColor: 'var(--primary-bg)', 
+              borderRadius: '4px', 
+              height: '8px', 
+              overflow: 'hidden' 
+            }}>
+              <div style={{ 
+                backgroundColor: '#28a745', 
+                height: '100%', 
+                width: `${Math.min((totalPaid / invoice.total) * 100, 100)}%`,
+                transition: 'width 0.3s ease'
+              }} />
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem', textAlign: 'right' }}>
+              {Math.round((totalPaid / invoice.total) * 100)}% paid
+            </div>
+          </div>
+        )}
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
         <div style={{ backgroundColor: 'var(--secondary-bg)', padding: '1rem', borderRadius: '4px' }}>
           <h3 style={{ marginBottom: '0.75rem', fontSize: '0.875rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Bill To</h3>
@@ -158,11 +208,6 @@ const InvoiceDetail = () => {
           <h3 style={{ marginBottom: '0.75rem', fontSize: '0.875rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Dates</h3>
           <div><strong>Issue Date:</strong> {invoice.issueDate}</div>
           <div><strong>Due Date:</strong> {invoice.dueDate}</div>
-          {invoice.paidAt && (
-            <div style={{ color: '#28a745' }}>
-              <strong>Paid:</strong> {new Date(invoice.paidAt).toLocaleDateString()}
-            </div>
-          )}
         </div>
       </div>
 
@@ -183,6 +228,7 @@ const InvoiceDetail = () => {
                 <td style={{ padding: '0.75rem', borderBottom: '1px solid var(--border-color)' }}>
                   {item.description}
                   {item.type === 'time' && <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>(Time Entry)</span>}
+                  {item.type === 'expense' && <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>(Expense)</span>}
                 </td>
                 <td style={{ padding: '0.75rem', textAlign: 'right', borderBottom: '1px solid var(--border-color)' }}>{item.quantity}</td>
                 <td style={{ padding: '0.75rem', textAlign: 'right', borderBottom: '1px solid var(--border-color)' }}>{formatCurrency(item.rate)}</td>
@@ -209,6 +255,47 @@ const InvoiceDetail = () => {
         </div>
       </div>
 
+      <div style={{ marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3 style={{ margin: 0, borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Payments</h3>
+          {!showPaymentForm && balance > 0 && (
+            <button 
+              onClick={() => setShowPaymentForm(true)}
+              style={{ backgroundColor: '#28a745', color: '#fff', fontSize: '0.875rem', padding: '0.5rem 1rem' }}
+            >
+              Record Payment
+            </button>
+          )}
+        </div>
+        
+        {showPaymentForm && (
+          <div style={{ backgroundColor: 'var(--secondary-bg)', padding: '1rem', borderRadius: '4px', marginBottom: '1rem' }}>
+            <h4 style={{ marginTop: 0, marginBottom: '1rem' }}>
+              {editingPayment ? 'Edit Payment' : 'Record Payment'}
+            </h4>
+            <PaymentForm 
+              invoiceId={id!}
+              editId={editingPayment?.id}
+              initialData={editingPayment ? {
+                amount: editingPayment.amount.toString(),
+                date: editingPayment.date,
+                method: editingPayment.method,
+                referenceNumber: editingPayment.referenceNumber || '',
+                notes: editingPayment.notes || ''
+              } : undefined}
+              onSuccess={handlePaymentSuccess}
+              onCancel={() => { setShowPaymentForm(false); setEditingPayment(null) }}
+            />
+          </div>
+        )}
+        
+        <PaymentList 
+          invoiceId={id!} 
+          onEdit={handleEditPayment}
+          onRefresh={loadInvoice}
+        />
+      </div>
+
       {invoice.notes && (
         <div style={{ backgroundColor: 'var(--secondary-bg)', padding: '1rem', borderRadius: '4px', marginBottom: '1.5rem' }}>
           <h3 style={{ marginBottom: '0.5rem', fontSize: '0.875rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Notes</h3>
@@ -227,16 +314,8 @@ const InvoiceDetail = () => {
         >
           {downloading ? 'Generating...' : 'Download PDF'}
         </button>
-        {status !== 'paid' && (
-          <button 
-            onClick={handleMarkPaid}
-            style={{ backgroundColor: '#28a745', color: '#fff' }}
-          >
-            Mark as Paid
-          </button>
-        )}
         <NavLink to={`/invoices/edit/${invoice.id}`}>
-          <button>Edit</button>
+          <button>Edit Invoice</button>
         </NavLink>
         <button 
           onClick={handleDelete}

@@ -62,13 +62,13 @@ describe('Settings', () => {
   })
 
   it('calls export functions when export button clicked', async () => {
-    const mockData = { projects: [], waivers: [], certificates: [], tasks: [], photos: [], dailyLogs: [], timeEntries: [], invoices: [], expenses: [] }
+    const mockData = { projects: [], waivers: [], certificates: [], tasks: [], photos: [], dailyLogs: [], timeEntries: [], invoices: [], expenses: [], payments: [] }
     const mockBackup = {
       version: '1.0',
       appVersion: '1.2.0',
       exportedAt: '2024-01-01T00:00:00.000Z',
       checksum: 'abc123',
-      summary: { projects: 0, waivers: 0, certificates: 0, tasks: 0, photos: 0, dailyLogs: 0, timeEntries: 0, invoices: 0 },
+      summary: { projects: 0, waivers: 0, certificates: 0, tasks: 0, photos: 0, dailyLogs: 0, timeEntries: 0, invoices: 0, payments: 0 },
       data: mockData,
     }
 

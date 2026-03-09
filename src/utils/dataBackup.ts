@@ -9,6 +9,7 @@ export interface BackupData {
   dailyLogs: SubLinkDB['dailyLogs']['value'][]
   timeEntries: SubLinkDB['timeEntries']['value'][]
   invoices: SubLinkDB['invoices']['value'][]
+  payments: SubLinkDB['payments']['value'][]
 }
 
 export interface BackupSummary {
@@ -20,6 +21,7 @@ export interface BackupSummary {
   dailyLogs: number
   timeEntries: number
   invoices: number
+  payments: number
 }
 
 export interface BackupFile {
@@ -52,6 +54,7 @@ export async function createBackupFile(data: BackupData): Promise<BackupFile> {
     dailyLogs: data.dailyLogs.length,
     timeEntries: data.timeEntries.length,
     invoices: data.invoices.length,
+    payments: data.payments?.length || 0,
   }
 
   const backupWithoutChecksum: Omit<BackupFile, 'checksum'> = {

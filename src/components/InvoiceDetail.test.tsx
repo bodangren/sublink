@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import InvoiceDetail from './InvoiceDetail'
-import { initDB, clearDatabase, saveInvoice, getInvoice } from '../db'
+import { initDB, clearDatabase, saveInvoice } from '../db'
 import { ConfirmProvider } from '../hooks/useConfirm'
 import 'fake-indexeddb/auto'
 
@@ -68,7 +68,7 @@ describe('InvoiceDetail', () => {
     })
   })
 
-  it('marks invoice as paid', async () => {
+  it('shows record payment button when balance due', async () => {
     const result = await saveInvoice({
       clientName: 'Payable Client',
       issueDate: '2026-03-08',
@@ -84,22 +84,7 @@ describe('InvoiceDetail', () => {
     renderWithRouter(result.id)
     
     await waitFor(() => {
-      expect(screen.getByText('Mark as Paid')).toBeDefined()
-    })
-    
-    const markPaidButtons = screen.getAllByRole('button', { name: 'Mark as Paid' })
-    fireEvent.click(markPaidButtons[0])
-    
-    await waitFor(() => {
-      expect(screen.getByText('Mark this invoice as paid?')).toBeDefined()
-    })
-    
-    const confirmButtons = screen.getAllByRole('button', { name: 'Mark Paid' })
-    fireEvent.click(confirmButtons[confirmButtons.length - 1])
-    
-    await waitFor(async () => {
-      const invoice = await getInvoice(result.id)
-      expect(invoice?.status).toBe('paid')
+      expect(screen.getByText('Record Payment')).toBeDefined()
     })
   })
 })

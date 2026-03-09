@@ -30,3 +30,5 @@ This file tracks all major tracks for the project. Each track has its own detail
   *Link: [./archive/invoicing_20260308/](./archive/invoicing_20260308/)*
 - [x] **Track: Data Backup & Restore - Protect Offline-First Data.**
   *Link: [./archive/data_backup_restore_20260308/](./archive/data_backup_restore_20260308/)*
+- [x] **Track: Payment Tracking - Record and Track Invoice Payments.**
+  *Link: [./archive/payment_tracking_20260309/](./archive/payment_tracking_20260309/)*

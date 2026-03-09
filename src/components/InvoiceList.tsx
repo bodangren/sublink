@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
-import { getInvoices, deleteInvoice } from '../db'
+import { getInvoices, deleteInvoice, getTotalPaidByInvoice } from '../db'
 import type { Invoice } from '../db'
 import { useConfirm } from '../hooks/useConfirm'
+
+interface InvoiceWithPaid extends Invoice {
+  totalPaid: number
+}
 
 const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('en-US', {
@@ -19,9 +23,10 @@ const formatDate = (dateStr: string): string => {
   })
 }
 
-const getInvoiceStatus = (invoice: Invoice): 'draft' | 'pending' | 'paid' | 'overdue' => {
-  if (invoice.status === 'paid') return 'paid'
+const getInvoiceStatusWithPayments = (invoice: Invoice, totalPaid: number): 'draft' | 'pending' | 'partial' | 'paid' | 'overdue' => {
   if (invoice.status === 'draft') return 'draft'
+  if (totalPaid >= invoice.total) return 'paid'
+  if (totalPaid > 0) return 'partial'
   const today = new Date().toISOString().split('T')[0]
   if (invoice.dueDate < today) return 'overdue'
   return 'pending'
@@ -30,6 +35,7 @@ const getInvoiceStatus = (invoice: Invoice): 'draft' | 'pending' | 'paid' | 'ove
 const getStatusColor = (status: string): string => {
   switch (status) {
     case 'paid': return '#28a745'
+    case 'partial': return '#17a2b8'
     case 'pending': return '#ffc107'
     case 'overdue': return '#dc3545'
     case 'draft': return '#6c757d'
@@ -37,16 +43,33 @@ const getStatusColor = (status: string): string => {
   }
 }
 
+const getStatusLabel = (status: string): string => {
+  switch (status) {
+    case 'partial': return 'Partial'
+    default: return status
+  }
+}
+
 const InvoiceList = () => {
-  const [invoices, setInvoices] = useState<Invoice[]>([])
-  const [filter, setFilter] = useState<'all' | 'draft' | 'pending' | 'paid' | 'overdue'>('all')
+  const [invoices, setInvoices] = useState<InvoiceWithPaid[]>([])
+  const [filter, setFilter] = useState<'all' | 'draft' | 'pending' | 'partial' | 'paid' | 'overdue'>('all')
   const confirm = useConfirm()
 
   useEffect(() => {
     let mounted = true
-    getInvoices().then(data => {
-      if (mounted) setInvoices(data.sort((a, b) => b.createdAt - a.createdAt))
-    })
+    async function loadInvoices() {
+      const data = await getInvoices()
+      const invoicesWithPaid: InvoiceWithPaid[] = await Promise.all(
+        data.map(async (invoice) => {
+          const totalPaid = await getTotalPaidByInvoice(invoice.id)
+          return { ...invoice, totalPaid }
+        })
+      )
+      if (mounted) {
+        setInvoices(invoicesWithPaid.sort((a, b) => b.createdAt - a.createdAt))
+      }
+    }
+    loadInvoices()
     return () => { mounted = false }
   }, [])
 
@@ -60,9 +83,17 @@ const InvoiceList = () => {
     if (confirmed) {
       await deleteInvoice(id)
       const data = await getInvoices()
-      setInvoices(data.sort((a, b) => b.createdAt - a.createdAt))
+      const invoicesWithPaid: InvoiceWithPaid[] = await Promise.all(
+        data.map(async (invoice) => {
+          const totalPaid = await getTotalPaidByInvoice(invoice.id)
+          return { ...invoice, totalPaid }
+        })
+      )
+      setInvoices(invoicesWithPaid.sort((a, b) => b.createdAt - a.createdAt))
     }
   }
+
+  const getInvoiceStatus = (invoice: InvoiceWithPaid) => getInvoiceStatusWithPayments(invoice, invoice.totalPaid)
 
   const filteredInvoices = invoices.filter(invoice => {
     if (filter === 'all') return true
@@ -73,6 +104,7 @@ const InvoiceList = () => {
     all: invoices.length,
     draft: invoices.filter(i => getInvoiceStatus(i) === 'draft').length,
     pending: invoices.filter(i => getInvoiceStatus(i) === 'pending').length,
+    partial: invoices.filter(i => getInvoiceStatus(i) === 'partial').length,
     paid: invoices.filter(i => getInvoiceStatus(i) === 'paid').length,
     overdue: invoices.filter(i => getInvoiceStatus(i) === 'overdue').length,
   }
@@ -85,7 +117,7 @@ const InvoiceList = () => {
       </NavLink>
 
       <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-        {(['all', 'draft', 'pending', 'overdue', 'paid'] as const).map(status => (
+        {(['all', 'draft', 'pending', 'partial', 'overdue', 'paid'] as const).map(status => (
           <button
             key={status}
             onClick={() => setFilter(status)}
@@ -100,7 +132,7 @@ const InvoiceList = () => {
               textTransform: 'capitalize',
             }}
           >
-            {status} ({statusCounts[status]})
+            {getStatusLabel(status)} ({statusCounts[status]})
           </button>
         ))}
       </div>
@@ -113,6 +145,7 @@ const InvoiceList = () => {
             {filteredInvoices.map(invoice => {
               const status = getInvoiceStatus(invoice)
               const statusColor = getStatusColor(status)
+              const balance = invoice.total - invoice.totalPaid
               
               return (
                 <li key={invoice.id} style={{ 
@@ -136,7 +169,7 @@ const InvoiceList = () => {
                           fontWeight: 'bold',
                           textTransform: 'uppercase'
                         }}>
-                          {status}
+                          {getStatusLabel(status)}
                         </span>
                       </div>
                       <div style={{ marginTop: '0.25rem' }}>{invoice.clientName}</div>
@@ -145,6 +178,16 @@ const InvoiceList = () => {
                       <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--accent-color)' }}>
                         {formatCurrency(invoice.total)}
                       </div>
+                      {invoice.totalPaid > 0 && invoice.totalPaid < invoice.total && (
+                        <div style={{ fontSize: '0.75rem', color: '#28a745' }}>
+                          {formatCurrency(invoice.totalPaid)} paid, {formatCurrency(balance)} due
+                        </div>
+                      )}
+                      {invoice.totalPaid >= invoice.total && (
+                        <div style={{ fontSize: '0.75rem', color: '#28a745' }}>
+                          Fully paid
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>

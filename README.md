@@ -9,6 +9,7 @@ SubLink is a local-first mobile Progressive Web App (PWA) designed for subcontra
 - **Project Management:** Organize all your work by project. Create projects with client info, contract values, and dates. View project details with related tasks, daily logs, and waivers all in one place.
 - **Time Tracker:** Track billable hours with a live timer. Start/stop with one tap, add manual entries, and view time grouped by date or project. Perfect for accurate billing and time management.
 - **Invoicing:** Create professional invoices from time entries and custom line items. Add client details, apply taxes, and export PDFs. Track payment status (draft, pending, paid, overdue) to get paid faster.
+- **Payment Tracking:** Record payments received on invoices, including partial payments and multiple payment methods. View payment history and track outstanding balances. Dashboard shows recent payments at a glance.
 - **Daily Construction Logs:** Create professional daily logs with weather, work performed, personnel, delays, and equipment. Export as PDFs for GC submission. Never miss documenting a day's work again.
 - **Instant Lien Waivers:** Generate signed PDF lien waivers on-site. Capture signatures directly on your screen and export as standardized PDFs.
 - **Compliance Vault:** Manage Certificates of Insurance (COIs) with color-coded expiration tracking. Stay compliant with automated visual alerts for expired and expiring-soon certificates.
