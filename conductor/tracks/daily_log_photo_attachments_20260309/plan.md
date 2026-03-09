@@ -17,7 +17,7 @@
 - [x] 2.5 Add photo capture button styling (rugged/outdoor theme)
 - [x] 2.6 Write tests for photo capture in form
 
-## Phase 3: DailyLogDetail Photo Display
+## Phase 3: DailyLogDetail Photo Display [checkpoint: 4b9afad]
 - [x] 3.1 Import `PhotoGallery` component
 - [x] 3.2 Load photos using `getPhotosByDailyLog`
 - [x] 3.3 Add photo count to detail header
