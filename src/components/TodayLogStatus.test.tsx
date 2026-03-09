@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import TodayLogStatus from './TodayLogStatus'
-import { initDB, clearDatabase, saveDailyLog, savePhoto } from '../db'
+import { initDB, clearDatabase, saveDailyLog } from '../db'
 import 'fake-indexeddb/auto'
 
 const renderWithRouter = (component: React.ReactElement) => {
