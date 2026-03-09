@@ -1,6 +1,6 @@
 # Implementation Plan: Daily Log Photo Attachments
 
-## Phase 1: Database Layer
+## Phase 1: Database Layer [checkpoint: 2c40b57]
 - [x] 1.1 Update `DailyLog` interface in db.ts to include `photoIds?: string[]`
 - [x] 1.2 Add `by-daily-log` index to photos object store (Skipped - using photoIds array approach instead)
 - [x] 1.3 Increment database version (Skipped - no index changes needed)
