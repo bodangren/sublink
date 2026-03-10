@@ -82,7 +82,7 @@ describe('ExpenseList', () => {
     renderWithRouter(<ExpenseList />)
     
     await waitFor(() => {
-      expect(screen.getByText(/\$300.00/)).toBeDefined()
+      expect(screen.getAllByText(/\$300.00/).length).toBeGreaterThan(0)
     })
   })
 })

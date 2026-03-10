@@ -1,0 +1,8 @@
+{
+  "track_id": "expense_pdf_export_20260310",
+  "type": "feature",
+  "status": "in_progress",
+  "created_at": "2026-03-10T12:00:00Z",
+  "updated_at": "2026-03-10T12:00:00Z",
+  "description": "Generate professional PDF expense reports for tax documentation with category summaries, date filtering, and project association"
+}

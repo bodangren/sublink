@@ -40,3 +40,5 @@ This file tracks all major tracks for the project. Each track has its own detail
   *Link: [./archive/pdf_refactor_20260310/](./archive/pdf_refactor_20260310/)*
 - [x] **Track: Mileage Tracking - Track Travel for Tax Deductions.**
   *Link: [./archive/mileage_tracking_20260310/](./archive/mileage_tracking_20260310/)*
+- [x] **Track: Expense Report PDF Export - Generate Tax Documentation.**
+  *Link: [./archive/expense_pdf_export_20260310/](./archive/expense_pdf_export_20260310/)*

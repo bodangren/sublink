@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 import { getExpenses, deleteExpense, getProjects } from '../db'
 import type { Expense, Project, ExpenseCategory } from '../db'
 import { useConfirm } from '../hooks/useConfirm'
+import ExpenseSummary from './ExpenseSummary'
 
 interface ExpenseWithProject extends Expense {
   projectName?: string
@@ -117,20 +118,10 @@ const ExpenseList = () => {
         </div>
       </div>
 
-      {filteredExpenses.length > 0 && (
-        <div style={{ 
-          marginTop: '1.5rem', 
-          padding: '1rem', 
-          backgroundColor: 'var(--secondary-bg)', 
-          borderRadius: '4px',
-          border: '2px solid var(--accent-color)'
-        }}>
-          <strong>Total: ${filteredExpenses.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}</strong>
-          <span style={{ color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>
-            ({filteredExpenses.length} expense{filteredExpenses.length !== 1 ? 's' : ''})
-          </span>
-        </div>
-      )}
+      <ExpenseSummary 
+        expenses={filteredExpenses} 
+        projectNames={new Map(projects.map(p => [p.id, p.name]))} 
+      />
 
       <div style={{ marginTop: '1.5rem' }}>
         {filteredExpenses.length === 0 ? (
