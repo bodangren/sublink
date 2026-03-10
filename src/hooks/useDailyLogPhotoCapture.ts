@@ -13,10 +13,15 @@ interface UseDailyLogPhotoCaptureResult {
   handleCapture: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>
   clearPhotos: () => void
   getPhotoIds: () => string[]
+  setInitialPhotos: (photos: TaskPhoto[]) => void
 }
 
-export function useDailyLogPhotoCapture(): UseDailyLogPhotoCaptureResult {
-  const [photos, setPhotos] = useState<TaskPhoto[]>([])
+interface UseDailyLogPhotoCaptureOptions {
+  initialPhotos?: TaskPhoto[]
+}
+
+export function useDailyLogPhotoCapture(options?: UseDailyLogPhotoCaptureOptions): UseDailyLogPhotoCaptureResult {
+  const [photos, setPhotos] = useState<TaskPhoto[]>(options?.initialPhotos || [])
   const [isCapturing, setIsCapturing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -83,6 +88,10 @@ export function useDailyLogPhotoCapture(): UseDailyLogPhotoCaptureResult {
     setPhotos([])
   }, [])
 
+  const setInitialPhotos = useCallback((initialPhotos: TaskPhoto[]) => {
+    setPhotos(initialPhotos)
+  }, [])
+
   const getPhotoIds = useCallback(() => {
     return photos.map(p => p.id)
   }, [photos])
@@ -95,6 +104,7 @@ export function useDailyLogPhotoCapture(): UseDailyLogPhotoCaptureResult {
     fileInputRef,
     handleCapture,
     clearPhotos,
-    getPhotoIds
+    getPhotoIds,
+    setInitialPhotos
   }
 }

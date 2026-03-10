@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import DailyLogForm from './DailyLogForm'
-import { initDB, clearDatabase } from '../db'
+import { initDB, clearDatabase, saveDailyLog, savePhoto, getDailyLog } from '../db'
 import 'fake-indexeddb/auto'
 
 const mockNavigate = vi.fn()
@@ -11,7 +11,8 @@ vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom')
   return {
     ...actual,
-    useNavigate: () => mockNavigate
+    useNavigate: () => mockNavigate,
+    useParams: () => ({ id: 'test-edit-id' })
   }
 })
 
@@ -87,5 +88,97 @@ describe('DailyLogForm', () => {
     renderWithRouter(<DailyLogForm />)
     
     expect(screen.getByText(/site photos/i)).toBeDefined()
+  })
+
+  it('loads existing photos when editing a log with photos', async () => {
+    const photoId = await savePhoto({
+      imageData: 'data:image/png;base64,existingphoto',
+      capturedAt: Date.now(),
+      watermarkData: 'existing-watermark'
+    })
+    
+    const logId = await saveDailyLog({
+      date: '2026-03-08',
+      project: 'Photo Test Project',
+      weather: 'Sunny',
+      workPerformed: 'Test work',
+      personnel: 'Test crew',
+      photoIds: [photoId]
+    })
+
+    renderWithRouter(<DailyLogForm editId={logId} />)
+
+    await waitFor(() => {
+      expect(screen.getByText(/1 photo captured/)).toBeDefined()
+    })
+  })
+
+  it('preserves existing photos when saving in edit mode', async () => {
+    const photoId = await savePhoto({
+      imageData: 'data:image/png;base64,existingphoto',
+      capturedAt: Date.now(),
+      watermarkData: 'existing-watermark'
+    })
+    
+    const logId = await saveDailyLog({
+      date: '2026-03-08',
+      project: 'Photo Preserve Test',
+      weather: 'Sunny',
+      workPerformed: 'Test work',
+      personnel: 'Test crew',
+      photoIds: [photoId]
+    })
+
+    renderWithRouter(<DailyLogForm editId={logId} />)
+
+    await waitFor(() => {
+      expect(screen.getByText(/1 photo captured/)).toBeDefined()
+    })
+
+    const submitButton = screen.getByText(/update log/i)
+    fireEvent.click(submitButton)
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/logs')
+    })
+
+    const updatedLog = await getDailyLog(logId)
+    expect(updatedLog?.photoIds).toContain(photoId)
+  })
+
+  it('loads existing photos when editing with initialData provided', async () => {
+    const photoId = await savePhoto({
+      imageData: 'data:image/png;base64,existingphoto',
+      capturedAt: Date.now(),
+      watermarkData: 'existing-watermark'
+    })
+    
+    const logId = await saveDailyLog({
+      date: '2026-03-08',
+      project: 'InitialData Photo Test',
+      weather: 'Sunny',
+      workPerformed: 'Test work',
+      personnel: 'Test crew',
+      photoIds: [photoId]
+    })
+
+    renderWithRouter(<DailyLogForm 
+      editId={logId} 
+      initialData={{
+        date: '2026-03-08',
+        project: 'InitialData Photo Test',
+        projectId: '',
+        weather: 'Sunny',
+        workPerformed: 'Test work',
+        delays: '',
+        personnel: 'Test crew',
+        equipment: '',
+        notes: ''
+      }} 
+    />)
+
+    await waitFor(() => {
+      expect(screen.getByText(/1 photo captured/)).toBeDefined()
+    })
   })
 })

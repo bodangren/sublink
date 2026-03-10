@@ -23,10 +23,16 @@ const DailyLogDetail = ({ logId }: DailyLogDetailProps) => {
     let mounted = true
     const loadData = async () => {
       try {
+        if (!logId || logId.trim() === '') {
+          if (mounted) {
+            setLoading(false)
+          }
+          return
+        }
         const logData = await getDailyLog(logId)
         if (!mounted) return
         if (!logData) {
-          navigate('/logs')
+          if (mounted) setLoading(false)
           return
         }
         setLog(logData)
@@ -45,7 +51,7 @@ const DailyLogDetail = ({ logId }: DailyLogDetailProps) => {
     }
     loadData()
     return () => { mounted = false }
-  }, [logId, navigate])
+  }, [logId])
 
   const handleDelete = async () => {
     const confirmed = await confirm({

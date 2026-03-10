@@ -43,7 +43,7 @@ import ClientList from './components/ClientList'
 import ClientForm from './components/ClientForm'
 import ClientDetail from './components/ClientDetail'
 import Settings from './components/Settings'
-import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLogs, getProjects, getTimeEntry, getInvoice, getExpense, getEstimates, getAllMileage } from './db'
+import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLog, getProjects, getTimeEntry, getInvoice, getExpense, getEstimates, getAllMileage } from './db'
 import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry, Invoice, Expense, Estimate, MileageEntry, Client } from './db'
 import { getCOIStatus, getStatusColor, getStatusLabel } from './utils/coiStatus'
 import { useItemId, useTaskIdFromPath, useEditItem, formatCurrency } from './hooks/useEditWrapper'
@@ -264,10 +264,33 @@ const Logs = () => <DailyLogList />
 
 const DailyLogEditWrapper = () => {
   const id = useItemId() || ''
-  const { item: log, loading } = useEditItem<DailyLog>(id, getDailyLogs, (l: DailyLog, id: string) => l.id === id)
+  const [log, setLog] = useState<DailyLog | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    if (id && id.trim() !== '') {
+      getDailyLog(id).then(data => {
+        if (mounted) {
+          setLog(data || null)
+          setLoading(false)
+        }
+      })
+    } else {
+      setLoading(false)
+    }
+    return () => { mounted = false }
+  }, [id])
 
   if (loading) return <div className="container"><p>Loading...</p></div>
-  if (!log) return <div className="container"><p>Daily log not found.</p></div>
+  if (!log) {
+    return (
+      <div className="container">
+        <p>Daily log not found.</p>
+        <NavLink to="/logs"><button>Back to Logs</button></NavLink>
+      </div>
+    )
+  }
 
   return <DailyLogForm editId={id} initialData={{ 
     date: log.date, 
@@ -285,7 +308,14 @@ const DailyLogEditWrapper = () => {
 const DailyLogDetailWrapper = () => {
   const id = useItemId() || ''
 
-  if (!id) return <div className="container"><p>Daily log not found.</p></div>
+  if (!id || id.trim() === '') {
+    return (
+      <div className="container">
+        <p>Daily log not found.</p>
+        <NavLink to="/logs"><button>Back to Logs</button></NavLink>
+      </div>
+    )
+  }
 
   return <DailyLogDetail logId={id} />
 }

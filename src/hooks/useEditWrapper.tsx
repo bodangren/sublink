@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useParams } from 'react-router-dom'
 
 export function useItemId(): string | undefined {
-  return window.location.pathname.split('/').pop()
+  const { id } = useParams<{ id?: string }>()
+  return id
 }
 
 export function useTaskIdFromPath(): string | undefined {
-  const parts = window.location.pathname.split('/').slice(-2)
-  return parts[0]
+  const { id } = useParams<{ id?: string }>()
+  return id
 }
 
 export function useEditItem<T>(

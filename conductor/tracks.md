@@ -45,3 +45,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 - need a track for fixing daily kos: image not displayed after saving. pressing view button on a log entry shows "Daily log not found."
 - [x] **Track: Client Management - Centralized Client Contact System.**
   *Link: [./archive/client_management_20260310/](./archive/client_management_20260310/)*
+- [x] **Track: Daily Log Bug Fixes - Photo Display and Not Found Issues.**
+  *Link: [./archive/daily_log_fixes_20260311/](./archive/daily_log_fixes_20260311/)*

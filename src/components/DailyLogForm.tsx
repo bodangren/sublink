@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { saveDailyLog, updateDailyLog, getProjects, getDailyLog } from '../db'
+import { saveDailyLog, updateDailyLog, getProjects, getDailyLog, getPhotosByDailyLog } from '../db'
 import { useDailyLogPhotoCapture } from '../hooks/useDailyLogPhotoCapture'
 import type { Project } from '../db'
 
@@ -50,7 +50,8 @@ const DailyLogForm = ({ editId, initialData }: DailyLogFormProps) => {
     error: captureError,
     fileInputRef,
     handleCapture,
-    getPhotoIds
+    getPhotoIds,
+    setInitialPhotos
   } = useDailyLogPhotoCapture()
 
   useEffect(() => {
@@ -58,24 +59,30 @@ const DailyLogForm = ({ editId, initialData }: DailyLogFormProps) => {
   }, [])
 
   useEffect(() => {
-    if (editId && !initialData) {
-      getDailyLog(editId).then(log => {
+    if (editId) {
+      getDailyLog(editId).then(async log => {
         if (log) {
-          setFormData({
-            date: log.date,
-            project: log.project,
-            projectId: log.projectId || '',
-            weather: log.weather,
-            workPerformed: log.workPerformed,
-            delays: log.delays || '',
-            personnel: log.personnel,
-            equipment: log.equipment || '',
-            notes: log.notes || ''
-          })
+          if (!initialData) {
+            setFormData({
+              date: log.date,
+              project: log.project,
+              projectId: log.projectId || '',
+              weather: log.weather,
+              workPerformed: log.workPerformed,
+              delays: log.delays || '',
+              personnel: log.personnel,
+              equipment: log.equipment || '',
+              notes: log.notes || ''
+            })
+          }
+          if (log.photoIds && log.photoIds.length > 0) {
+            const existingPhotos = await getPhotosByDailyLog(editId)
+            setInitialPhotos(existingPhotos)
+          }
         }
       })
     }
-  }, [editId, initialData])
+  }, [editId, initialData, setInitialPhotos])
 
   useEffect(() => {
     if (!editId && !initialData && formData.projectId) {
