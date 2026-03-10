@@ -42,3 +42,4 @@ This file tracks all major tracks for the project. Each track has its own detail
   *Link: [./archive/mileage_tracking_20260310/](./archive/mileage_tracking_20260310/)*
 - [x] **Track: Expense Report PDF Export - Generate Tax Documentation.**
   *Link: [./archive/expense_pdf_export_20260310/](./archive/expense_pdf_export_20260310/)*
+- need a track for fixing daily kos: image not displayed after saving. pressing view button on a log entry shows "Daily log not found."
