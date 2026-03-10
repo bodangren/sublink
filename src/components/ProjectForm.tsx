@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { saveProject, getProject, updateProject } from '../db'
+import type { Client } from '../db'
+import ClientSelect from './ClientSelect'
 
 interface ProjectFormProps {
   editId?: string
   initialData?: {
     name: string
     client?: string
+    clientId?: string
     address?: string
     contractValue?: string
     startDate?: string
@@ -21,6 +24,7 @@ const ProjectForm = ({ editId, initialData }: ProjectFormProps) => {
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
     client: initialData?.client || '',
+    clientId: initialData?.clientId || '',
     address: initialData?.address || '',
     contractValue: initialData?.contractValue || '',
     startDate: initialData?.startDate || '',
@@ -35,6 +39,7 @@ const ProjectForm = ({ editId, initialData }: ProjectFormProps) => {
           setFormData({
             name: project.name,
             client: project.client || '',
+            clientId: project.clientId || '',
             address: project.address || '',
             contractValue: project.contractValue || '',
             startDate: project.startDate || '',
@@ -45,6 +50,14 @@ const ProjectForm = ({ editId, initialData }: ProjectFormProps) => {
       })
     }
   }, [editId, initialData])
+
+  const handleClientChange = (clientId: string | undefined, client: Client | undefined) => {
+    setFormData(prev => ({
+      ...prev,
+      clientId: clientId || '',
+      client: client?.name || ''
+    }))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -90,17 +103,21 @@ const ProjectForm = ({ editId, initialData }: ProjectFormProps) => {
         </div>
 
         <div style={{ marginBottom: '1rem' }}>
-          <label htmlFor="client" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-            Client
-          </label>
-          <input
-            type="text"
-            id="client"
-            value={formData.client}
-            onChange={(e) => setFormData({ ...formData, client: e.target.value })}
-            placeholder="e.g., ABC Construction, John Smith"
-            style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }}
+          <ClientSelect
+            value={formData.clientId}
+            onChange={handleClientChange}
+            label="Client"
+            placeholder="Select a client or enter manually..."
           />
+          {!formData.clientId && (
+            <input
+              type="text"
+              value={formData.client}
+              onChange={(e) => setFormData({ ...formData, client: e.target.value })}
+              placeholder="Or enter client name manually..."
+              style={{ width: '100%', padding: '0.75rem', fontSize: '1rem', marginTop: '0.5rem' }}
+            />
+          )}
         </div>
 
         <div style={{ marginBottom: '1rem' }}>

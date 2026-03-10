@@ -1,0 +1,6 @@
+name: Client Management
+description: Centralized client/contact management for reuse across projects, invoices, and estimates
+type: feature
+priority: high
+created: 2026-03-10
+status: in_progress

@@ -39,9 +39,12 @@ import MileageList from './components/MileageList'
 import MileageForm from './components/MileageForm'
 import MileageDetail from './components/MileageDetail'
 import MileageSummary from './components/MileageSummary'
+import ClientList from './components/ClientList'
+import ClientForm from './components/ClientForm'
+import ClientDetail from './components/ClientDetail'
 import Settings from './components/Settings'
 import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLogs, getProjects, getTimeEntry, getInvoice, getExpense, getEstimates, getAllMileage } from './db'
-import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry, Invoice, Expense, Estimate, MileageEntry } from './db'
+import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry, Invoice, Expense, Estimate, MileageEntry, Client } from './db'
 import { getCOIStatus, getStatusColor, getStatusLabel } from './utils/coiStatus'
 import { useItemId, useTaskIdFromPath, useEditItem, formatCurrency } from './hooks/useEditWrapper'
 import { ConfirmProvider, useConfirm } from './hooks/useConfirm'
@@ -297,6 +300,7 @@ const ProjectEditWrapper = () => {
   return <ProjectForm editId={id} initialData={{ 
     name: project.name, 
     client: project.client || '', 
+    clientId: project.clientId || '',
     address: project.address || '', 
     contractValue: project.contractValue || '', 
     startDate: project.startDate || '', 
@@ -361,6 +365,7 @@ const InvoiceEditWrapper = () => {
   return <InvoiceForm editId={id} initialData={{
     projectId: invoice.projectId,
     projectName: invoice.projectName,
+    clientId: invoice.clientId,
     clientName: invoice.clientName,
     clientEmail: invoice.clientEmail,
     clientAddress: invoice.clientAddress,
@@ -428,6 +433,7 @@ const EstimateEditWrapper = () => {
   return <EstimateForm editId={id} initialData={{ 
     projectId: estimate.projectId || '',
     projectName: estimate.projectName || '',
+    clientId: estimate.clientId || '',
     clientName: estimate.clientName,
     clientEmail: estimate.clientEmail || '',
     clientAddress: estimate.clientAddress || '',
@@ -463,6 +469,30 @@ const MileageEditWrapper = () => {
     notes: mileage.notes || '',
     isRoundTrip: mileage.isRoundTrip,
   }} />
+}
+
+const ClientEditWrapper = () => {
+  const id = useItemId() || ''
+  const [client, setClient] = useState<Client | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    import('./db').then(({ getClient }) => {
+      getClient(id).then(data => {
+        if (mounted) {
+          setClient(data || null)
+          setLoading(false)
+        }
+      })
+    })
+    return () => { mounted = false }
+  }, [id])
+
+  if (loading) return <div className="container"><p>Loading...</p></div>
+  if (!client) return <div className="container"><p>Client not found.</p></div>
+
+  return <ClientForm editId={id} />
 }
 
 const AppShell = () => (
@@ -507,6 +537,10 @@ const AppShell = () => (
         <Route path="/mileage/edit/:id" element={<MileageEditWrapper />} />
         <Route path="/mileage/:id" element={<MileageDetail />} />
         <Route path="/mileage/summary" element={<MileageSummary />} />
+        <Route path="/clients" element={<ClientList />} />
+        <Route path="/clients/new" element={<ClientForm />} />
+        <Route path="/clients/edit/:id" element={<ClientEditWrapper />} />
+        <Route path="/clients/:id" element={<ClientDetail />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
     </div>
@@ -522,6 +556,9 @@ const AppShell = () => (
       </NavLink>
       <NavLink to="/projects" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Projects</span>
+      </NavLink>
+      <NavLink to="/clients" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+        <span>Clients</span>
       </NavLink>
       <NavLink to="/settings" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Settings</span>

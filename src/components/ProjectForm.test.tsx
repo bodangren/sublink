@@ -33,8 +33,15 @@ describe('ProjectForm', () => {
     const nameInput = screen.getByLabelText(/Project Name/i)
     fireEvent.change(nameInput, { target: { value: 'New Test Project' } })
     
-    const clientInput = screen.getByLabelText(/Client/i)
+    const clientInput = screen.getByPlaceholderText(/Select a client/)
     fireEvent.change(clientInput, { target: { value: 'Test Client' } })
+    fireEvent.focus(clientInput)
+    
+    await waitFor(() => {
+      expect(screen.getByText('Test Client')).toBeDefined()
+    })
+    
+    fireEvent.click(screen.getByText('Test Client'))
     
     const submitButton = screen.getByText(/Create Project/i)
     fireEvent.click(submitButton)

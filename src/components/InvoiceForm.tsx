@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { saveInvoice, updateInvoice, getProjects, getTimeEntriesByProject } from '../db'
-import type { Project, TimeEntry, InvoiceLineItem } from '../db'
+import type { Project, TimeEntry, InvoiceLineItem, Client } from '../db'
+import ClientSelect from './ClientSelect'
 
 interface InvoiceFormProps {
   editId?: string
   initialData?: {
     projectId?: string
     projectName?: string
+    clientId?: string
     clientName: string
     clientEmail?: string
     clientAddress?: string
@@ -41,10 +43,12 @@ const formatCurrency = (amount: number): string => {
 
 const InvoiceForm = ({ editId, initialData }: InvoiceFormProps) => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [projects, setProjects] = useState<Project[]>([])
   const [availableTimeEntries, setAvailableTimeEntries] = useState<TimeEntry[]>([])
   const [projectId, setProjectId] = useState(initialData?.projectId || '')
   const [projectName, setProjectName] = useState(initialData?.projectName || '')
+  const [clientId, setClientId] = useState(initialData?.clientId || searchParams.get('clientId') || '')
   const [clientName, setClientName] = useState(initialData?.clientName || '')
   const [clientEmail, setClientEmail] = useState(initialData?.clientEmail || '')
   const [clientAddress, setClientAddress] = useState(initialData?.clientAddress || '')
@@ -56,6 +60,14 @@ const InvoiceForm = ({ editId, initialData }: InvoiceFormProps) => {
   const [status, setStatus] = useState<'draft' | 'pending'>(initialData?.status === 'paid' || initialData?.status === 'overdue' ? 'pending' : (initialData?.status || 'draft'))
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const handleClientChange = (newClientId: string | undefined, client: Client | undefined) => {
+    setClientId(newClientId || '')
+    setClientName(client?.name || '')
+    setClientEmail(client?.email || '')
+    const address = [client?.address, client?.city, client?.state, client?.zip].filter(Boolean).join(', ')
+    setClientAddress(address || '')
+  }
 
   useEffect(() => {
     getProjects().then(setProjects)
@@ -155,6 +167,7 @@ const InvoiceForm = ({ editId, initialData }: InvoiceFormProps) => {
       const invoiceData = {
         projectId: projectId || undefined,
         projectName: projectName || undefined,
+        clientId: clientId || undefined,
         clientName: clientName.trim(),
         clientEmail: clientEmail.trim() || undefined,
         clientAddress: clientAddress.trim() || undefined,
@@ -231,6 +244,15 @@ const InvoiceForm = ({ editId, initialData }: InvoiceFormProps) => {
             Client Information
           </h3>
           <div style={{ marginBottom: '1rem' }}>
+            <ClientSelect
+              value={clientId}
+              onChange={handleClientChange}
+              label="Select Client"
+              placeholder="Choose a client..."
+              required
+            />
+          </div>
+          <div style={{ marginBottom: '1rem' }}>
             <label htmlFor="clientName" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
               Client Name *
             </label>
@@ -238,7 +260,7 @@ const InvoiceForm = ({ editId, initialData }: InvoiceFormProps) => {
               id="clientName"
               type="text"
               value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
+              onChange={(e) => { setClientName(e.target.value); setClientId(''); }}
               required
               placeholder="Company or person name"
               style={{

@@ -5,6 +5,21 @@ export type ExpenseCategory = 'materials' | 'fuel' | 'equipment_rental' | 'subco
 export type PaymentMethod = 'check' | 'cash' | 'ach' | 'credit_card' | 'other'
 export type EstimateStatus = 'draft' | 'sent' | 'accepted' | 'declined' | 'converted'
 
+export interface Client {
+  id: string
+  name: string
+  contactPerson?: string
+  email?: string
+  phone?: string
+  address?: string
+  city?: string
+  state?: string
+  zip?: string
+  notes?: string
+  createdAt: number
+  updatedAt: number
+}
+
 export interface EstimateLineItem {
   id: string
   description: string
@@ -25,12 +40,18 @@ export interface InvoiceLineItem {
 }
 
 export interface SubLinkDB extends DBSchema {
+  clients: {
+    key: string
+    value: Client
+    indexes: { 'by-name': string }
+  }
   projects: {
     key: string
     value: {
       id: string
       name: string
       client?: string
+      clientId?: string
       address?: string
       contractValue?: string
       startDate?: string
@@ -39,6 +60,7 @@ export interface SubLinkDB extends DBSchema {
       createdAt: number
       updatedAt: number
     }
+    indexes: { 'by-client': string }
   }
   waivers: {
     key: string
@@ -133,6 +155,7 @@ export interface SubLinkDB extends DBSchema {
       invoiceNumber: string
       projectId?: string
       projectName?: string
+      clientId?: string
       clientName: string
       clientEmail?: string
       clientAddress?: string
@@ -149,7 +172,7 @@ export interface SubLinkDB extends DBSchema {
       createdAt: number
       updatedAt: number
     }
-    indexes: { 'by-status': string, 'by-project': string }
+    indexes: { 'by-status': string, 'by-project': string, 'by-client': string }
   }
   expenses: {
     key: string
@@ -193,6 +216,7 @@ export interface SubLinkDB extends DBSchema {
       estimateNumber: string
       projectId?: string
       projectName?: string
+      clientId?: string
       clientName: string
       clientEmail?: string
       clientAddress?: string
@@ -209,7 +233,7 @@ export interface SubLinkDB extends DBSchema {
       createdAt: number
       updatedAt: number
     }
-    indexes: { 'by-status': string, 'by-project': string }
+    indexes: { 'by-status': string, 'by-project': string, 'by-client': string }
   }
   mileageEntries: {
     key: string
@@ -249,7 +273,7 @@ export type MileageEntry = SubLinkDB['mileageEntries']['value']
 let db: IDBPDatabase<SubLinkDB>
 
 export const initDB = async () => {
-  db = await openDB<SubLinkDB>('sublink-db', 11, {
+  db = await openDB<SubLinkDB>('sublink-db', 12, {
     upgrade(db, oldVersion) {
       if (oldVersion < 1) {
         db.createObjectStore('waivers', {
@@ -322,6 +346,12 @@ export const initDB = async () => {
         })
         mileageStore.createIndex('by-project', 'projectId')
         mileageStore.createIndex('by-date', 'date')
+      }
+      if (oldVersion < 12) {
+        const clientStore = db.createObjectStore('clients', {
+          keyPath: 'id',
+        })
+        clientStore.createIndex('by-name', 'name')
       }
     },
   })
@@ -407,6 +437,41 @@ export const getPhotoCountByTask = async (taskId: string) => {
   return photos.length
 }
 
+export const saveClient = async (client: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+  const id = crypto.randomUUID()
+  const now = Date.now()
+  await db.put('clients', { ...client, id, createdAt: now, updatedAt: now })
+  return id
+}
+
+export const getClients = async (): Promise<Client[]> => {
+  return await db.getAll('clients')
+}
+
+export const getClient = async (id: string): Promise<Client | undefined> => {
+  return await db.get('clients', id)
+}
+
+export const updateClient = async (id: string, updates: Partial<Omit<Client, 'id' | 'createdAt'>>): Promise<void> => {
+  const existing = await db.get('clients', id)
+  if (!existing) throw new Error('Client not found')
+  await db.put('clients', { ...existing, ...updates, updatedAt: Date.now() })
+}
+
+export const deleteClient = async (id: string): Promise<void> => {
+  await db.delete('clients', id)
+}
+
+export const searchClients = async (query: string): Promise<Client[]> => {
+  const clients = await db.getAll('clients')
+  const lowerQuery = query.toLowerCase()
+  return clients.filter(c => 
+    c.name.toLowerCase().includes(lowerQuery) ||
+    c.contactPerson?.toLowerCase().includes(lowerQuery) ||
+    c.email?.toLowerCase().includes(lowerQuery)
+  )
+}
+
 export const clearDatabase = async () => {
   await db.clear('waivers')
   await db.clear('certificates')
@@ -420,6 +485,7 @@ export const clearDatabase = async () => {
   await db.clear('payments')
   await db.clear('estimates')
   await db.clear('mileageEntries')
+  await db.clear('clients')
 }
 
 export const saveProject = async (project: Omit<SubLinkDB['projects']['value'], 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -460,6 +526,11 @@ export const getDailyLogsByProject = async (projectId: string) => {
 export const getWaiversByProject = async (projectId: string) => {
   const waivers = await db.getAll('waivers')
   return waivers.filter(waiver => waiver.projectId === projectId)
+}
+
+export const getProjectsByClient = async (clientId: string): Promise<Project[]> => {
+  const projects = await db.getAll('projects')
+  return projects.filter(project => project.clientId === clientId)
 }
 
 export const saveDailyLog = async (log: Omit<SubLinkDB['dailyLogs']['value'], 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -610,6 +681,11 @@ export const getInvoicesByStatus = async (status: Invoice['status']): Promise<In
 
 export const getInvoicesByProject = async (projectId: string): Promise<Invoice[]> => {
   return await db.getAllFromIndex('invoices', 'by-project', projectId)
+}
+
+export const getInvoicesByClient = async (clientId: string): Promise<Invoice[]> => {
+  const invoices = await db.getAll('invoices')
+  return invoices.filter(inv => inv.clientId === clientId)
 }
 
 export const getUnpaidInvoices = async (): Promise<Invoice[]> => {
@@ -824,6 +900,11 @@ export const getEstimatesByProject = async (projectId: string): Promise<Estimate
   return await db.getAllFromIndex('estimates', 'by-project', projectId)
 }
 
+export const getEstimatesByClient = async (clientId: string): Promise<Estimate[]> => {
+  const estimates = await db.getAll('estimates')
+  return estimates.filter(est => est.clientId === clientId)
+}
+
 export const getRecentEstimates = async (limit: number = 5): Promise<Estimate[]> => {
   const estimates = await db.getAll('estimates')
   return estimates.sort((a, b) => b.createdAt - a.createdAt).slice(0, limit)
@@ -869,7 +950,7 @@ export const getRecentMileage = async (limit: number = 5): Promise<MileageEntry[
 }
 
 export const exportAllData = async () => {
-  const [projects, waivers, certificates, tasks, photos, dailyLogs, timeEntries, invoices, expenses, payments, estimates, mileageEntries] = await Promise.all([
+  const [projects, waivers, certificates, tasks, photos, dailyLogs, timeEntries, invoices, expenses, payments, estimates, mileageEntries, clients] = await Promise.all([
     db.getAll('projects'),
     db.getAll('waivers'),
     db.getAll('certificates'),
@@ -882,6 +963,7 @@ export const exportAllData = async () => {
     db.getAll('payments'),
     db.getAll('estimates'),
     db.getAll('mileageEntries'),
+    db.getAll('clients'),
   ])
   
   return {
@@ -897,10 +979,11 @@ export const exportAllData = async () => {
     payments,
     estimates,
     mileageEntries,
+    clients,
   }
 }
 
-type StoreName = 'projects' | 'waivers' | 'certificates' | 'tasks' | 'photos' | 'dailyLogs' | 'timeEntries' | 'invoices' | 'expenses' | 'payments' | 'estimates' | 'mileageEntries'
+type StoreName = 'projects' | 'waivers' | 'certificates' | 'tasks' | 'photos' | 'dailyLogs' | 'timeEntries' | 'invoices' | 'expenses' | 'payments' | 'estimates' | 'mileageEntries' | 'clients'
 
 export interface RestoreData {
   projects?: SubLinkDB['projects']['value'][]
@@ -915,6 +998,7 @@ export interface RestoreData {
   payments?: SubLinkDB['payments']['value'][]
   estimates?: SubLinkDB['estimates']['value'][]
   mileageEntries?: SubLinkDB['mileageEntries']['value'][]
+  clients?: SubLinkDB['clients']['value'][]
 }
 
 export const restoreData = async (data: RestoreData, mode: 'replace' | 'merge' = 'replace'): Promise<void> => {
@@ -922,7 +1006,7 @@ export const restoreData = async (data: RestoreData, mode: 'replace' | 'merge' =
     await clearDatabase()
   }
   
-  const stores: StoreName[] = ['projects', 'waivers', 'certificates', 'tasks', 'photos', 'dailyLogs', 'timeEntries', 'invoices', 'expenses', 'payments', 'estimates', 'mileageEntries']
+  const stores: StoreName[] = ['projects', 'waivers', 'certificates', 'tasks', 'photos', 'dailyLogs', 'timeEntries', 'invoices', 'expenses', 'payments', 'estimates', 'mileageEntries', 'clients']
   
   for (const storeName of stores) {
     const items = data[storeName]
