@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import ProjectForm from './ProjectForm'
-import { initDB, saveProject, getProjects, clearDatabase, getProject } from '../db'
+import { initDB, saveProject, saveClient, getProjects, clearDatabase, getProject } from '../db'
 import 'fake-indexeddb/auto'
 
 const renderWithRouter = (component: React.ReactElement) => {
@@ -28,6 +28,8 @@ describe('ProjectForm', () => {
   })
 
   it('creates a new project', async () => {
+    await saveClient({ name: 'Test Client' })
+    
     renderWithRouter(<ProjectForm />)
     
     const nameInput = screen.getByLabelText(/Project Name/i)

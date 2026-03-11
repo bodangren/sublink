@@ -265,7 +265,7 @@ const Logs = () => <DailyLogList />
 const DailyLogEditWrapper = () => {
   const id = useItemId() || ''
   const [log, setLog] = useState<DailyLog | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => Boolean(id && id.trim() !== ''))
 
   useEffect(() => {
     let mounted = true
@@ -276,8 +276,6 @@ const DailyLogEditWrapper = () => {
           setLoading(false)
         }
       })
-    } else {
-      setLoading(false)
     }
     return () => { mounted = false }
   }, [id])

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import ClientSelect from './ClientSelect'
-import { initDB, saveClient, clearDatabase } from '../db'
+import { initDB, saveClient, clearDatabase, type Client } from '../db'
 import 'fake-indexeddb/auto'
 
 describe('ClientSelect', () => {
@@ -50,9 +50,9 @@ describe('ClientSelect', () => {
     const clientId = await saveClient({ name: 'Test Company' })
     
     let selectedId: string | undefined
-    let selectedClient: any
+    let selectedClient: Client | undefined
     
-    const handleChange = (id: string | undefined, client: any) => {
+    const handleChange = (id: string | undefined, client: Client | undefined) => {
       selectedId = id
       selectedClient = client
     }

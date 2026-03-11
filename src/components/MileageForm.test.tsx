@@ -62,11 +62,13 @@ describe('MileageForm', () => {
   })
 
   it('captures GPS coordinates when available', async () => {
+    type PositionCallback = (position: GeolocationPosition) => void
     const mockGeolocation = {
-      getCurrentPosition: vi.fn().mockImplementation((success: any) => {
+      getCurrentPosition: vi.fn().mockImplementation((success: PositionCallback) => {
         success({
-          coords: { latitude: 40.7128, longitude: -74.0060 }
-        })
+          coords: { latitude: 40.7128, longitude: -74.0060, accuracy: 10, altitude: null, altitudeAccuracy: null, heading: null, speed: null },
+          timestamp: Date.now()
+        } as GeolocationPosition)
       })
     }
     
@@ -98,9 +100,11 @@ describe('MileageForm', () => {
   })
 
   it('handles GPS error gracefully', async () => {
+    type PositionCallback = (position: GeolocationPosition) => void
+    type PositionErrorCallback = (error: GeolocationPositionError) => void
     const mockGeolocation = {
-      getCurrentPosition: vi.fn().mockImplementation((_success: any, error: any) => {
-        error({ message: 'Permission denied' })
+      getCurrentPosition: vi.fn().mockImplementation((_success: PositionCallback, error: PositionErrorCallback) => {
+        error({ message: 'Permission denied', code: 1, PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 } as GeolocationPositionError)
       })
     }
     

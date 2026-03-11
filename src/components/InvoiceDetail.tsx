@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, NavLink } from 'react-router-dom'
 import { getInvoice, deleteInvoice, getTotalPaidByInvoice } from '../db'
 import type { Invoice, Payment } from '../db'
@@ -42,7 +42,7 @@ const InvoiceDetail = () => {
   const [showPaymentForm, setShowPaymentForm] = useState(false)
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null)
 
-  const loadInvoice = async () => {
+  const loadInvoice = useCallback(async () => {
     if (!id) return
     const data = await getInvoice(id)
     setInvoice(data || null)
@@ -51,7 +51,7 @@ const InvoiceDetail = () => {
       setTotalPaid(paid)
     }
     setLoading(false)
-  }
+  }, [id])
 
   useEffect(() => {
     let mounted = true
@@ -61,7 +61,7 @@ const InvoiceDetail = () => {
       })
     }
     return () => { mounted = false }
-  }, [id])
+  }, [id, loadInvoice])
 
   const handleDelete = async () => {
     if (!invoice || !id) return

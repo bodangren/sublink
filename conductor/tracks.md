@@ -47,3 +47,5 @@ This file tracks all major tracks for the project. Each track has its own detail
   *Link: [./archive/client_management_20260310/](./archive/client_management_20260310/)*
 - [x] **Track: Daily Log Bug Fixes - Photo Display and Not Found Issues.**
   *Link: [./archive/daily_log_fixes_20260311/](./archive/daily_log_fixes_20260311/)*
+- [x] **Track: Lint Fixes & Tech Debt Cleanup.**
+  *Link: [./archive/lint_fixes_20260311/](./archive/lint_fixes_20260311/)*

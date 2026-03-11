@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { getClients } from '../db'
 import type { Client } from '../db'
 
@@ -15,7 +15,6 @@ const ClientSelect = ({ value, onChange, placeholder = 'Select a client...', req
   const [clients, setClients] = useState<Client[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null)
 
   useEffect(() => {
     getClients().then(data => {
@@ -23,13 +22,11 @@ const ClientSelect = ({ value, onChange, placeholder = 'Select a client...', req
     })
   }, [])
 
-  useEffect(() => {
+  const selectedClient = useMemo(() => {
     if (value) {
-      const client = clients.find(c => c.id === value)
-      setSelectedClient(client || null)
-    } else {
-      setSelectedClient(null)
+      return clients.find(c => c.id === value) || null
     }
+    return null
   }, [value, clients])
 
   const filteredClients = clients.filter(client =>
@@ -39,60 +36,42 @@ const ClientSelect = ({ value, onChange, placeholder = 'Select a client...', req
   )
 
   const handleSelect = (client: Client) => {
-    setSelectedClient(client)
     onChange(client.id, client)
     setSearchQuery('')
     setShowDropdown(false)
   }
 
   const handleClear = () => {
-    setSelectedClient(null)
     onChange(undefined, undefined)
     setSearchQuery('')
   }
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="relative">
       {label && (
-        <label htmlFor={id} style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+        <label htmlFor={id} className="mb-2 font-bold">
           {label}{required && ' *'}
         </label>
       )}
       
       {selectedClient ? (
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '0.5rem',
-          padding: '0.75rem',
-          border: '1px solid var(--border-color)',
-          borderRadius: '4px',
-          backgroundColor: 'var(--secondary-bg)'
-        }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 'bold' }}>{selectedClient.name}</div>
+        <div className="selected-item">
+          <div className="selected-item-info">
+            <div className="selected-item-name">{selectedClient.name}</div>
             {selectedClient.email && (
-              <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{selectedClient.email}</div>
+              <div className="selected-item-detail">{selectedClient.email}</div>
             )}
           </div>
           <button 
             type="button"
             onClick={handleClear}
-            style={{ 
-              padding: '0.25rem 0.5rem', 
-              fontSize: '0.875rem',
-              backgroundColor: '#dc3545',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
+            className="btn-clear"
           >
             Clear
           </button>
         </div>
       ) : (
-        <div style={{ position: 'relative' }}>
+        <div className="relative">
           <input
             type="text"
             id={id}
@@ -105,47 +84,19 @@ const ClientSelect = ({ value, onChange, placeholder = 'Select a client...', req
             onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
             placeholder={placeholder}
             required={required && !selectedClient}
-            style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }}
           />
           
           {showDropdown && filteredClients.length > 0 && (
-            <ul style={{
-              position: 'absolute',
-              top: '100%',
-              left: 0,
-              right: 0,
-              zIndex: 1000,
-              listStyle: 'none',
-              padding: 0,
-              margin: 0,
-              maxHeight: '200px',
-              overflowY: 'auto',
-              backgroundColor: 'var(--secondary-bg)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '4px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
-            }}>
+            <ul className="dropdown">
               {filteredClients.map(client => (
                 <li
                   key={client.id}
                   onClick={() => handleSelect(client)}
-                  style={{
-                    padding: '0.75rem',
-                    cursor: 'pointer',
-                    borderBottom: '1px solid var(--border-color)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--accent-color)'
-                    e.currentTarget.style.color = '#fff'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent'
-                    e.currentTarget.style.color = 'inherit'
-                  }}
+                  className="dropdown-item"
                 >
-                  <div style={{ fontWeight: 'bold' }}>{client.name}</div>
+                  <div className="font-bold">{client.name}</div>
                   {client.email && (
-                    <div style={{ fontSize: '0.875rem' }}>{client.email}</div>
+                    <div className="text-sm">{client.email}</div>
                   )}
                 </li>
               ))}
@@ -153,17 +104,7 @@ const ClientSelect = ({ value, onChange, placeholder = 'Select a client...', req
           )}
           
           {showDropdown && searchQuery && filteredClients.length === 0 && (
-            <div style={{
-              position: 'absolute',
-              top: '100%',
-              left: 0,
-              right: 0,
-              zIndex: 1000,
-              padding: '0.75rem',
-              backgroundColor: 'var(--secondary-bg)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '4px'
-            }}>
+            <div className="dropdown p-3">
               No clients found. Create a new client first.
             </div>
           )}

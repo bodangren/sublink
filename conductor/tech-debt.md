@@ -6,7 +6,7 @@
 
 | ID | Description | Severity | Status | Created |
 |----|-------------|----------|--------|---------|
-| TD-001 | Inline styles throughout components - should use CSS classes | Medium | Open | 2026-03-08 |
+| TD-001 | Inline styles throughout components - should use CSS classes | Medium | Partial | 2026-03-08 |
 | TD-002 | No form validation feedback beyond `required` attribute | Low | Open | 2026-03-08 |
 
 ## Resolved Items
@@ -19,5 +19,5 @@
 | TD-006 | Daily log photo attachments - spec'd but never implemented | 2026-03-09 | daily_log_photo_attachments_20260309 |
 
 ## Notes
-- TD-001: Consider CSS modules or styled components in future refactor
+- TD-001: Added utility CSS classes and refactored ClientSelect component. Remaining components can be updated incrementally.
 - TD-002: Could integrate react-hook-form for better validation UX
