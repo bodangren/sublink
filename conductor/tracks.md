@@ -49,3 +49,5 @@ This file tracks all major tracks for the project. Each track has its own detail
   *Link: [./archive/daily_log_fixes_20260311/](./archive/daily_log_fixes_20260311/)*
 - [x] **Track: Lint Fixes & Tech Debt Cleanup.**
   *Link: [./archive/lint_fixes_20260311/](./archive/lint_fixes_20260311/)*
+- [x] **Track: Project Profitability Dashboard - Financial Analysis per Project.**
+  *Link: [./archive/project_profitability_20260311/](./archive/project_profitability_20260311/)*

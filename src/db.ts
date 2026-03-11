@@ -40,6 +40,10 @@ export interface InvoiceLineItem {
 }
 
 export interface SubLinkDB extends DBSchema {
+  settings: {
+    key: string
+    value: { key: string; value: string }
+  }
   clients: {
     key: string
     value: Client
@@ -273,7 +277,7 @@ export type MileageEntry = SubLinkDB['mileageEntries']['value']
 let db: IDBPDatabase<SubLinkDB>
 
 export const initDB = async () => {
-  db = await openDB<SubLinkDB>('sublink-db', 12, {
+  db = await openDB<SubLinkDB>('sublink-db', 13, {
     upgrade(db, oldVersion) {
       if (oldVersion < 1) {
         db.createObjectStore('waivers', {
@@ -352,6 +356,11 @@ export const initDB = async () => {
           keyPath: 'id',
         })
         clientStore.createIndex('by-name', 'name')
+      }
+      if (oldVersion < 13) {
+        db.createObjectStore('settings', {
+          keyPath: 'key',
+        })
       }
     },
   })
@@ -1026,3 +1035,14 @@ export const restoreData = async (data: RestoreData, mode: 'replace' | 'merge' =
     }
   }
 }
+
+export const getSetting = async (key: string, defaultValue: string = ''): Promise<string> => {
+  const setting = await db.get('settings', key)
+  return setting?.value ?? defaultValue
+}
+
+export const setSetting = async (key: string, value: string): Promise<void> => {
+  await db.put('settings', { key, value })
+}
+
+export const DEFAULT_HOURLY_RATE = '75'

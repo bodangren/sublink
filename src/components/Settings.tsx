@@ -3,6 +3,9 @@ import { NavLink } from 'react-router-dom'
 import {
   exportAllData,
   restoreData,
+  getSetting,
+  setSetting,
+  DEFAULT_HOURLY_RATE,
 } from '../db'
 import type { RestoreData } from '../db'
 import {
@@ -27,10 +30,15 @@ export default function Settings() {
   const [previewBackup, setPreviewBackup] = useState<BackupFile | null>(null)
   const [restoreMode, setRestoreMode] = useState<'replace' | 'merge'>('replace')
   const [lastBackup, setLastBackup] = useState<{ date: string; summary: BackupSummary } | null>(null)
+  const [hourlyRate, setHourlyRate] = useState('')
+  const [savingRate, setSavingRate] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setLastBackup(getLastBackupInfo())
+    getSetting('hourlyRate', DEFAULT_HOURLY_RATE).then(rate => {
+      setHourlyRate(rate)
+    })
   }, [])
 
   const handleExport = async () => {
@@ -106,6 +114,20 @@ export default function Settings() {
     setError(null)
   }
 
+  const handleSaveHourlyRate = async () => {
+    setSavingRate(true)
+    setError(null)
+    try {
+      await setSetting('hourlyRate', hourlyRate)
+      setSuccess('Hourly rate saved successfully!')
+    } catch (err) {
+      setError('Failed to save hourly rate.')
+      console.error('Save rate error:', err)
+    } finally {
+      setSavingRate(false)
+    }
+  }
+
   return (
     <div className="page">
       <header className="page-header">
@@ -129,6 +151,37 @@ export default function Settings() {
           </button>
         </div>
       )}
+
+      <section className="settings-section">
+        <h2>Financial Settings</h2>
+        <p className="settings-description">
+          Configure your default hourly rate for profitability calculations on projects.
+        </p>
+        
+        <div className="form-group">
+          <label htmlFor="hourlyRate">Default Hourly Rate ($)</label>
+          <input
+            type="number"
+            id="hourlyRate"
+            value={hourlyRate}
+            onChange={(e) => setHourlyRate(e.target.value)}
+            min="0"
+            step="0.01"
+            placeholder="75.00"
+          />
+          <small className="form-hint">
+            This rate is used to calculate labor costs in project profitability reports.
+          </small>
+        </div>
+        
+        <button
+          onClick={handleSaveHourlyRate}
+          disabled={savingRate || !hourlyRate}
+          className="btn btn-primary"
+        >
+          {savingRate ? 'Saving...' : 'Save Rate'}
+        </button>
+      </section>
 
       <section className="settings-section">
         <h2>Data Backup & Restore</h2>

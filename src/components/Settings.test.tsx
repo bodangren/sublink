@@ -10,6 +10,9 @@ import 'fake-indexeddb/auto'
 vi.mock('../db', () => ({
   exportAllData: vi.fn(),
   restoreData: vi.fn(),
+  getSetting: vi.fn(),
+  setSetting: vi.fn(),
+  DEFAULT_HOURLY_RATE: '75',
 }))
 
 vi.mock('../utils/dataBackup', () => ({
@@ -39,6 +42,7 @@ describe('Settings', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
+    vi.mocked(db.getSetting).mockResolvedValue('75')
   })
 
   afterEach(() => {
@@ -90,5 +94,42 @@ describe('Settings', () => {
   it('shows about section', () => {
     renderSettings()
     expect(screen.getByText('About SubLink')).toBeDefined()
+  })
+
+  it('shows financial settings section', () => {
+    vi.mocked(db.getSetting).mockResolvedValue('75')
+    renderSettings()
+    expect(screen.getByText('Financial Settings')).toBeDefined()
+  })
+
+  it('shows hourly rate input with default value', async () => {
+    vi.mocked(db.getSetting).mockResolvedValue('75')
+    renderSettings()
+    await waitFor(() => {
+      const input = screen.getByLabelText('Default Hourly Rate ($)')
+      expect(input).toBeDefined()
+      expect((input as HTMLInputElement).value).toBe('75')
+    })
+  })
+
+  it('saves hourly rate when save button clicked', async () => {
+    vi.mocked(db.getSetting).mockResolvedValue('75')
+    vi.mocked(db.setSetting).mockResolvedValue(undefined)
+    
+    renderSettings()
+    
+    await waitFor(() => {
+      expect(screen.getByLabelText('Default Hourly Rate ($)')).toBeDefined()
+    })
+    
+    const input = screen.getByLabelText('Default Hourly Rate ($)')
+    fireEvent.change(input, { target: { value: '85' } })
+    
+    const saveBtn = screen.getByText('Save Rate')
+    fireEvent.click(saveBtn)
+    
+    await waitFor(() => {
+      expect(db.setSetting).toHaveBeenCalledWith('hourlyRate', '85')
+    })
   })
 })

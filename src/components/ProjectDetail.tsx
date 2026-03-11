@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useParams, useNavigate } from 'react-router-dom'
-import { getProject, getTasksByProject, getDailyLogsByProject, getWaiversByProject, deleteProject, getExpensesByProject } from '../db'
-import type { Project, Task, DailyLog, Waiver, Expense } from '../db'
+import { getProject, getTasksByProject, getDailyLogsByProject, getWaiversByProject, deleteProject, getExpensesByProject, getTimeEntriesByProject, getSetting, DEFAULT_HOURLY_RATE } from '../db'
+import type { Project, Task, DailyLog, Waiver, Expense, TimeEntry } from '../db'
 import { formatCurrency } from '../hooks/useEditWrapper'
 import { useConfirm } from '../hooks/useConfirm'
+import { calculateProjectProfitability, formatHours, formatCurrency as formatProfitCurrency, formatPercent } from '../utils/profitability'
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>()
@@ -14,6 +15,8 @@ const ProjectDetail = () => {
   const [logs, setLogs] = useState<DailyLog[]>([])
   const [waivers, setWaivers] = useState<Waiver[]>([])
   const [expenses, setExpenses] = useState<Expense[]>([])
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
+  const [hourlyRate, setHourlyRate] = useState<number>(parseFloat(DEFAULT_HOURLY_RATE))
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -25,14 +28,18 @@ const ProjectDetail = () => {
       getTasksByProject(id),
       getDailyLogsByProject(id),
       getWaiversByProject(id),
-      getExpensesByProject(id)
-    ]).then(([proj, taskList, logList, waiverList, expenseList]) => {
+      getExpensesByProject(id),
+      getTimeEntriesByProject(id),
+      getSetting('hourlyRate', DEFAULT_HOURLY_RATE)
+    ]).then(([proj, taskList, logList, waiverList, expenseList, timeList, rate]) => {
       if (mounted) {
         setProject(proj || null)
         setTasks(taskList.sort((a, b) => b.updatedAt - a.updatedAt))
         setLogs(logList.sort((a, b) => b.date.localeCompare(a.date)))
         setWaivers(waiverList.sort((a, b) => b.createdAt - a.createdAt))
         setExpenses(expenseList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
+        setTimeEntries(timeList.sort((a, b) => b.startTime - a.startTime))
+        setHourlyRate(parseFloat(rate) || parseFloat(DEFAULT_HOURLY_RATE))
         setLoading(false)
       }
     })
@@ -220,6 +227,78 @@ const ProjectDetail = () => {
           <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--accent-color)' }}>${expenses.reduce((sum, e) => sum + e.amount, 0).toFixed(0)}</div>
           <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Expenses</div>
         </div>
+      </div>
+
+      <div style={{ 
+        backgroundColor: 'var(--secondary-bg)', 
+        padding: '1.5rem', 
+        borderRadius: '4px',
+        border: '1px solid var(--border-color)',
+        marginBottom: '1.5rem'
+      }}>
+        <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', marginTop: 0 }}>Financial Summary</h2>
+        {(() => {
+          const profitability = calculateProjectProfitability(project, timeEntries, expenses, hourlyRate)
+          return (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Contract Value</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>
+                    {profitability.hasContractValue ? formatProfitCurrency(profitability.contractValue) : 'Not Set'}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Labor ({formatHours(profitability.totalHours)})</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{formatProfitCurrency(profitability.laborCost)}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Expenses</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{formatProfitCurrency(profitability.totalExpenses)}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Total Costs</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{formatProfitCurrency(profitability.totalCosts)}</div>
+                </div>
+              </div>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                padding: '1rem',
+                backgroundColor: profitability.profitLoss >= 0 ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)',
+                borderRadius: '4px',
+                borderLeft: `4px solid ${profitability.profitLoss >= 0 ? '#28a745' : '#dc3545'}`
+              }}>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                    {profitability.profitLoss >= 0 ? 'Profit' : 'Loss'}
+                  </div>
+                  <div style={{ 
+                    fontSize: '2rem', 
+                    fontWeight: 'bold', 
+                    color: profitability.profitLoss >= 0 ? '#28a745' : '#dc3545' 
+                  }}>
+                    {formatProfitCurrency(profitability.profitLoss)}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Margin</div>
+                  <div style={{ 
+                    fontSize: '1.5rem', 
+                    fontWeight: 'bold', 
+                    color: profitability.profitLoss >= 0 ? '#28a745' : '#dc3545' 
+                  }}>
+                    {formatPercent(profitability.marginPercent)}
+                  </div>
+                </div>
+              </div>
+              <div style={{ marginTop: '0.75rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                Hourly rate: ${hourlyRate.toFixed(2)}/hr
+              </div>
+            </>
+          )
+        })()}
       </div>
 
       {expenses.length > 0 && (
