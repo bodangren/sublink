@@ -37,9 +37,9 @@ describe('CalendarView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     
-    vi.mocked(db.getTasks).mockResolvedValue(mockTasks as any)
-    vi.mocked(db.getDailyLogs).mockResolvedValue(mockLogs as any)
-    vi.mocked(db.getProjects).mockResolvedValue(mockProjects as any)
+    vi.mocked(db.getTasks).mockResolvedValue(mockTasks as unknown as db.Task[])
+    vi.mocked(db.getDailyLogs).mockResolvedValue(mockLogs as unknown as db.DailyLog[])
+    vi.mocked(db.getProjects).mockResolvedValue(mockProjects as unknown as db.Project[])
   })
 
   it('renders loading state initially', () => {

@@ -44,7 +44,7 @@ export default function CalendarView() {
           setProjects(projectsData)
           setLoading(false)
         }
-      } catch (error) {
+      } catch {
         if (mounted) setLoading(false)
       }
     }

@@ -53,3 +53,5 @@ This file tracks all major tracks for the project. Each track has its own detail
   *Link: [./archive/project_profitability_20260311/](./archive/project_profitability_20260311/)*
 - [x] **Track: Calendar View - Visual Schedule for Tasks, Logs, and Projects.**
   *Link: [./archive/calendar_view_20260311/](./archive/calendar_view_20260311/)*
+- [ ] **Track: Code Cleanup & Refactor - 2026-03-12.**
+  *Link: [./tracks/active/code_cleanup_20260312/](./tracks/active/code_cleanup_20260312/)*
