@@ -43,6 +43,7 @@ import ClientList from './components/ClientList'
 import ClientForm from './components/ClientForm'
 import ClientDetail from './components/ClientDetail'
 import Settings from './components/Settings'
+import CalendarView from './components/CalendarView'
 import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLog, getProjects, getTimeEntry, getInvoice, getExpense, getEstimates, getAllMileage } from './db'
 import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry, Invoice, Expense, Estimate, MileageEntry, Client } from './db'
 import { getCOIStatus, getStatusColor, getStatusLabel } from './utils/coiStatus'
@@ -570,14 +571,15 @@ const AppShell = () => (
         <Route path="/clients/edit/:id" element={<ClientEditWrapper />} />
         <Route path="/clients/:id" element={<ClientDetail />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/calendar" element={<CalendarView />} />
       </Routes>
     </div>
     <nav className="bottom-nav">
       <NavLink to="/" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Home</span>
       </NavLink>
-      <NavLink to="/time" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-        <span>Time</span>
+      <NavLink to="/calendar" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+        <span>Calendar</span>
       </NavLink>
       <NavLink to="/logs" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Logs</span>
