@@ -51,8 +51,11 @@ import EquipmentList from './components/EquipmentList'
 import EquipmentForm from './components/EquipmentForm'
 import EquipmentDetail from './components/EquipmentDetail'
 import DashboardEquipment from './components/DashboardEquipment'
-import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLog, getProjects, getTimeEntry, getInvoice, getExpense, getEstimates, getAllMileage } from './db'
-import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry, Invoice, Expense, Estimate, MileageEntry, Client } from './db'
+import ChangeOrderList from './components/ChangeOrderList'
+import ChangeOrderForm from './components/ChangeOrderForm'
+import ChangeOrderDetail from './components/ChangeOrderDetail'
+import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLog, getProjects, getTimeEntry, getInvoice, getExpense, getEstimates, getAllMileage, getAllChangeOrders } from './db'
+import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry, Invoice, Expense, Estimate, MileageEntry, Client, ChangeOrder } from './db'
 import { getCOIStatus, getStatusColor, getStatusLabel } from './utils/coiStatus'
 import { generateAllNotifications } from './utils/notifications'
 import { useItemId, useTaskIdFromPath, useEditItem, formatCurrency } from './hooks/useEditWrapper'
@@ -557,6 +560,40 @@ const EquipmentEditWrapper = () => {
   return <EquipmentForm editId={id} />
 }
 
+const ChangeOrderDetailWrapper = () => {
+  const id = useItemId() || ''
+
+  if (!id || id.trim() === '') {
+    return (
+      <div className="container">
+        <p>Change order not found.</p>
+        <NavLink to="/change-orders"><button>Back to Change Orders</button></NavLink>
+      </div>
+    )
+  }
+
+  return <ChangeOrderDetail />
+}
+
+const ChangeOrderEditWrapper = () => {
+  const id = useItemId() || ''
+  const { item: changeOrder, loading } = useEditItem<ChangeOrder>(id, getAllChangeOrders, (c: ChangeOrder, id: string) => c.id === id)
+
+  if (loading) return <div className="container"><p>Loading...</p></div>
+  if (!changeOrder) return <div className="container"><p>Change order not found.</p></div>
+
+  return <ChangeOrderForm editId={id} initialData={{ 
+    projectId: changeOrder.projectId || '',
+    projectName: changeOrder.projectName || '',
+    description: changeOrder.description,
+    costAdjustment: changeOrder.costAdjustment,
+    reason: changeOrder.reason,
+    contractReference: changeOrder.contractReference || '',
+    status: changeOrder.status,
+    notes: changeOrder.notes || ''
+  }} />
+}
+
 const AppShell = () => {
   useEffect(() => {
     generateAllNotifications()
@@ -615,6 +652,10 @@ const AppShell = () => {
         <Route path="/equipment/new" element={<EquipmentForm />} />
         <Route path="/equipment/edit/:id" element={<EquipmentEditWrapper />} />
         <Route path="/equipment/:id" element={<EquipmentDetailWrapper />} />
+        <Route path="/change-orders" element={<ChangeOrderList />} />
+        <Route path="/change-orders/new" element={<ChangeOrderForm />} />
+        <Route path="/change-orders/edit/:id" element={<ChangeOrderEditWrapper />} />
+        <Route path="/change-orders/:id" element={<ChangeOrderDetailWrapper />} />
       </Routes>
     </div>
     <nav className="bottom-nav">
@@ -632,6 +673,9 @@ const AppShell = () => {
       </NavLink>
       <NavLink to="/projects" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Projects</span>
+      </NavLink>
+      <NavLink to="/change-orders" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+        <span>Change Orders</span>
       </NavLink>
       <NavLink to="/equipment" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Equipment</span>

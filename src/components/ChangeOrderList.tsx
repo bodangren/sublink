@@ -238,7 +238,6 @@ const ChangeOrderList = () => {
             </div>
           ))}
         </div>
-)}
       )}
     </div>
   )
