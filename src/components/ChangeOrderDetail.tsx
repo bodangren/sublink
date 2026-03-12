@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getChangeOrder, deleteChangeOrder, updateChangeOrderStatus } from '../db'
 import type { ChangeOrder, ChangeOrderStatus } from '../db'
 import { useConfirm } from '../hooks/useConfirm'
+import { useAsyncEffect } from '../hooks/useAsyncEffect'
 
 const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('en-US', {
@@ -46,22 +47,32 @@ const ChangeOrderDetail = () => {
   const [changeOrder, setChangeOrder] = useState<ChangeOrder | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [reloadKey, setReloadKey] = useState(0)
 
-  useEffect(() => {
-    loadChangeOrder()
-  }, [id])
+  const reloadChangeOrder = () => setReloadKey(k => k + 1)
 
-  const loadChangeOrder = async () => {
-    if (!id) return
-    setLoading(true)
-    const co = await getChangeOrder(id)
-    if (co) {
-      setChangeOrder(co)
-    } else {
-      setError('Change order not found')
+  useAsyncEffect(
+    async () => {
+      if (!id) return null
+      const co = await getChangeOrder(id)
+      return co
+    },
+    [id, reloadKey],
+    {
+      onResult: (co) => {
+        if (co) {
+          setChangeOrder(co)
+        } else {
+          setError('Change order not found')
+        }
+        setLoading(false)
+      },
+      onError: () => {
+        setError('Failed to load change order')
+        setLoading(false)
+      }
     }
-    setLoading(false)
-  }
+  )
 
   const handleStatusChange = async (newStatus: ChangeOrderStatus) => {
     if (!changeOrder) return
@@ -75,7 +86,7 @@ const ChangeOrderDetail = () => {
     
     if (confirmed) {
       await updateChangeOrderStatus(changeOrder.id, newStatus)
-      await loadChangeOrder()
+      reloadChangeOrder()
     }
   }
 

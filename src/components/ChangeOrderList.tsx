@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAllChangeOrders, deleteChangeOrder } from '../db'
 import type { ChangeOrder, ChangeOrderStatus } from '../db'
 import { useConfirm } from '../hooks/useConfirm'
+import { useAsyncEffect } from '../hooks/useAsyncEffect'
 
 const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('en-US', {
@@ -32,16 +33,22 @@ const ChangeOrderList = () => {
   const [statusFilter, setStatusFilter] = useState<ChangeOrderStatus | 'all'>('all')
   const confirm = useConfirm()
 
-  useEffect(() => {
-    loadChangeOrders()
-  }, [])
-
-  const loadChangeOrders = async () => {
-    setLoading(true)
-    const cos = await getAllChangeOrders()
-    setChangeOrders(cos.sort((a, b) => b.createdAt - a.createdAt))
-    setLoading(false)
-  }
+  useAsyncEffect(
+    async () => {
+      const cos = await getAllChangeOrders()
+      return cos.sort((a, b) => b.createdAt - a.createdAt)
+    },
+    [],
+    {
+      onResult: (cos) => {
+        setChangeOrders(cos)
+        setLoading(false)
+      },
+      onError: () => {
+        setLoading(false)
+      }
+    }
+  )
 
   const handleDelete = async (id: string) => {
     const confirmed = await confirm({
