@@ -8,6 +8,25 @@ export type NotificationType = 'coi_expiration' | 'invoice_overdue' | 'project_d
 export type NotificationPriority = 'high' | 'medium' | 'low'
 export type EquipmentCategory = 'power_tool' | 'hand_tool' | 'heavy_equipment' | 'safety_gear' | 'vehicle' | 'other'
 export type EquipmentStatus = 'active' | 'in_repair' | 'retired'
+export type ChangeOrderStatus = 'draft' | 'submitted' | 'approved' | 'rejected'
+
+export interface ChangeOrder {
+  id: string
+  changeOrderNumber: string
+  projectId?: string
+  projectName?: string
+  description: string
+  costAdjustment: number
+  reason: string
+  contractReference?: string
+  status: ChangeOrderStatus
+  submittedDate?: string
+  approvedDate?: string
+  rejectedDate?: string
+  notes?: string
+  createdAt: number
+  updatedAt: number
+}
 
 export interface MaintenanceLog {
   date: string
@@ -313,6 +332,11 @@ export interface SubLinkDB extends DBSchema {
     value: Equipment
     indexes: { 'by-project': string, 'by-status': string, 'by-category': string }
   }
+  changeOrders: {
+    key: string
+    value: ChangeOrder
+    indexes: { 'by-project': string, 'by-status': string }
+  }
 }
 
 export type Project = SubLinkDB['projects']['value']
@@ -329,11 +353,12 @@ export type Estimate = SubLinkDB['estimates']['value']
 export type MileageEntry = SubLinkDB['mileageEntries']['value']
 export type NotificationRecord = SubLinkDB['notifications']['value']
 export type EquipmentRecord = SubLinkDB['equipment']['value']
+export type ChangeOrderRecord = SubLinkDB['changeOrders']['value']
 
 let db: IDBPDatabase<SubLinkDB>
 
 export const initDB = async () => {
-  db = await openDB<SubLinkDB>('sublink-db', 15, {
+  db = await openDB<SubLinkDB>('sublink-db', 16, {
     upgrade(db, oldVersion) {
       if (oldVersion < 1) {
         db.createObjectStore('waivers', {
@@ -432,6 +457,13 @@ export const initDB = async () => {
         equipmentStore.createIndex('by-project', 'currentProjectId')
         equipmentStore.createIndex('by-status', 'status')
         equipmentStore.createIndex('by-category', 'category')
+      }
+      if (oldVersion < 16) {
+        const changeOrderStore = db.createObjectStore('changeOrders', {
+          keyPath: 'id',
+        })
+        changeOrderStore.createIndex('by-project', 'projectId')
+        changeOrderStore.createIndex('by-status', 'status')
       }
     },
   })
@@ -568,6 +600,7 @@ export const clearDatabase = async () => {
   await db.clear('clients')
   await db.clear('notifications')
   await db.clear('equipment')
+  await db.clear('changeOrders')
 }
 
 export const saveProject = async (project: Omit<SubLinkDB['projects']['value'], 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -1272,3 +1305,85 @@ export const getTotalEquipmentValue = async (): Promise<number> => {
 }
 
 export const DEFAULT_HOURLY_RATE = '75'
+
+export const getNextChangeOrderNumber = async (): Promise<string> => {
+  const changeOrders = await db.getAll('changeOrders')
+  if (changeOrders.length === 0) {
+    return 'CO-001'
+  }
+  const numbers = changeOrders
+    .map(co => {
+      const match = co.changeOrderNumber.match(/CO-(\d+)/)
+      return match ? parseInt(match[1], 10) : 0
+    })
+    .filter(n => !isNaN(n))
+  const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0
+  return `CO-${String(maxNum + 1).padStart(3, '0')}`
+}
+
+export const saveChangeOrder = async (
+  changeOrder: Omit<ChangeOrder, 'id' | 'changeOrderNumber' | 'createdAt' | 'updatedAt'>
+): Promise<{ id: string; changeOrderNumber: string }> => {
+  const id = crypto.randomUUID()
+  const changeOrderNumber = await getNextChangeOrderNumber()
+  const now = Date.now()
+  await db.put('changeOrders', { ...changeOrder, id, changeOrderNumber, createdAt: now, updatedAt: now })
+  return { id, changeOrderNumber }
+}
+
+export const getChangeOrder = async (id: string): Promise<ChangeOrder | undefined> => {
+  return await db.get('changeOrders', id)
+}
+
+export const getAllChangeOrders = async (): Promise<ChangeOrder[]> => {
+  return await db.getAll('changeOrders')
+}
+
+export const getChangeOrdersByProject = async (projectId: string): Promise<ChangeOrder[]> => {
+  return await db.getAllFromIndex('changeOrders', 'by-project', projectId)
+}
+
+export const getChangeOrdersByStatus = async (status: ChangeOrderStatus): Promise<ChangeOrder[]> => {
+  return await db.getAllFromIndex('changeOrders', 'by-status', status)
+}
+
+export const updateChangeOrder = async (
+  id: string,
+  updates: Partial<Omit<ChangeOrder, 'id' | 'changeOrderNumber' | 'createdAt'>>
+): Promise<void> => {
+  const existing = await db.get('changeOrders', id)
+  if (!existing) throw new Error('Change order not found')
+  await db.put('changeOrders', { ...existing, ...updates, updatedAt: Date.now() })
+}
+
+export const updateChangeOrderStatus = async (
+  id: string,
+  status: ChangeOrderStatus
+): Promise<void> => {
+  const existing = await db.get('changeOrders', id)
+  if (!existing) throw new Error('Change order not found')
+  
+  const updates: Partial<ChangeOrder> = { status }
+  const today = new Date().toISOString().split('T')[0]
+  
+  if (status === 'submitted') {
+    updates.submittedDate = today
+  } else if (status === 'approved') {
+    updates.approvedDate = today
+  } else if (status === 'rejected') {
+    updates.rejectedDate = today
+  }
+  
+  await db.put('changeOrders', { ...existing, ...updates, updatedAt: Date.now() })
+}
+
+export const deleteChangeOrder = async (id: string): Promise<void> => {
+  await db.delete('changeOrders', id)
+}
+
+export const getTotalChangeOrdersByProject = async (projectId: string): Promise<number> => {
+  const changeOrders = await getChangeOrdersByProject(projectId)
+  return changeOrders
+    .filter(co => co.status === 'approved')
+    .reduce((total, co) => total + co.costAdjustment, 0)
+}
