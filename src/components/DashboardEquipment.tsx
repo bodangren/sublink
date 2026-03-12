@@ -1,21 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { getEquipmentNeedingMaintenance } from '../db'
 import type { Equipment } from '../db'
+import { useAsyncEffect } from '../hooks/useAsyncEffect'
 
 const DashboardEquipment = () => {
   const [equipment, setEquipment] = useState<Equipment[]>([])
 
-  useEffect(() => {
-    let mounted = true
-    loadEquipment()
-    return () => { mounted = false }
-
-    async function loadEquipment() {
+  useAsyncEffect(
+    async (isMounted) => {
       const data = await getEquipmentNeedingMaintenance()
-      if (mounted) setEquipment(data)
-    }
-  }, [])
+      if (isMounted()) setEquipment(data)
+    },
+    [],
+    { onResult: undefined }
+  )
 
   if (equipment.length === 0) {
     return (

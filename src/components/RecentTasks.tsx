@@ -1,24 +1,23 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { getTasks } from '../db'
 import type { Task } from '../db'
+import { useAsyncEffect } from '../hooks/useAsyncEffect'
 
 const RecentTasks = () => {
   const [tasks, setTasks] = useState<Task[]>([])
 
-  useEffect(() => {
-    let mounted = true
-    const loadTasks = async () => {
+  useAsyncEffect(
+    async (isMounted) => {
       const allTasks = await getTasks()
       const sorted = allTasks.sort((a, b) => b.createdAt - a.createdAt)
       const recent = sorted.slice(0, 5)
-      if (mounted) {
+      if (isMounted()) {
         setTasks(recent)
       }
-    }
-    loadTasks()
-    return () => { mounted = false }
-  }, [])
+    },
+    []
+  )
 
   if (tasks.length === 0) {
     return (

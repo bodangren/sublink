@@ -1,21 +1,19 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { getUnreadNotifications } from '../db'
 import type { NotificationRecord } from '../db'
+import { useAsyncEffect } from '../hooks/useAsyncEffect'
 
 const DashboardNotifications = () => {
   const [notifications, setNotifications] = useState<NotificationRecord[]>([])
 
-  useEffect(() => {
-    let mounted = true
-    loadNotifications()
-    return () => { mounted = false }
-
-    async function loadNotifications() {
+  useAsyncEffect(
+    async (isMounted) => {
       const data = await getUnreadNotifications()
-      if (mounted) setNotifications(data.slice(0, 3))
-    }
-  }, [])
+      if (isMounted()) setNotifications(data.slice(0, 3))
+    },
+    []
+  )
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {

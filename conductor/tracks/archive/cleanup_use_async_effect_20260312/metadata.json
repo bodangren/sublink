@@ -1,0 +1,8 @@
+{
+  "id": "cleanup_use_async_effect_20260312",
+  "name": "Cleanup: Extract useAsyncEffect Hook",
+  "type": "refactor",
+  "priority": "medium",
+  "created": "2026-03-12",
+  "status": "in_progress"
+}

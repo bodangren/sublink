@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { getInvoices } from '../db'
 import type { Invoice } from '../db'
+import { useAsyncEffect } from '../hooks/useAsyncEffect'
 
 const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('en-US', {
@@ -13,16 +14,16 @@ const formatCurrency = (amount: number): string => {
 const RecentInvoices = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([])
 
-  useEffect(() => {
-    let mounted = true
-    getInvoices().then(data => {
-      if (mounted) {
+  useAsyncEffect(
+    async (isMounted) => {
+      const data = await getInvoices()
+      if (isMounted()) {
         const sorted = data.sort((a, b) => b.createdAt - a.createdAt)
         setInvoices(sorted.slice(0, 5))
       }
-    })
-    return () => { mounted = false }
-  }, [])
+    },
+    []
+  )
 
   const getStatusColor = (status: string): string => {
     switch (status) {

@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { getExpenses } from '../db'
 import type { Expense, ExpenseCategory } from '../db'
+import { useAsyncEffect } from '../hooks/useAsyncEffect'
 
 const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
   materials: '#1976d2',
@@ -15,20 +16,18 @@ const RecentExpenses = () => {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [totalAmount, setTotalAmount] = useState<number>(0)
 
-  useEffect(() => {
-    let mounted = true
-    const loadExpenses = async () => {
+  useAsyncEffect(
+    async (isMounted) => {
       const allExpenses = await getExpenses()
       const sorted = allExpenses.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       const recent = sorted.slice(0, 5)
-      if (mounted) {
+      if (isMounted()) {
         setExpenses(recent)
         setTotalAmount(recent.reduce((sum, e) => sum + e.amount, 0))
       }
-    }
-    loadExpenses()
-    return () => { mounted = false }
-  }, [])
+    },
+    []
+  )
 
   if (expenses.length === 0) {
     return (

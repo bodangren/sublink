@@ -1,27 +1,26 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { getTasks, getWaivers, getCOIs } from '../db'
+import { useAsyncEffect } from '../hooks/useAsyncEffect'
 
 const DashboardStats = () => {
   const [taskCount, setTaskCount] = useState(0)
   const [waiverCount, setWaiverCount] = useState(0)
   const [coiCount, setCoiCount] = useState(0)
 
-  useEffect(() => {
-    let mounted = true
-    const loadStats = async () => {
+  useAsyncEffect(
+    async (isMounted) => {
       const tasks = await getTasks()
       const waivers = await getWaivers()
       const cois = await getCOIs()
       
-      if (mounted) {
+      if (isMounted()) {
         setTaskCount(tasks.length)
         setWaiverCount(waivers.length)
         setCoiCount(cois.length)
       }
-    }
-    loadStats()
-    return () => { mounted = false }
-  }, [])
+    },
+    []
+  )
 
   return (
     <div className="dashboard-stats">

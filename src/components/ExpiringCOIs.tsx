@@ -1,27 +1,26 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { getCOIs } from '../db'
 import type { Certificate } from '../db'
 import { getCOIStatus, getStatusColor, getStatusLabel } from '../utils/coiStatus'
+import { useAsyncEffect } from '../hooks/useAsyncEffect'
 
 const ExpiringCOIs = () => {
   const [expiringCOIs, setExpiringCOIs] = useState<Certificate[]>([])
 
-  useEffect(() => {
-    let mounted = true
-    const loadExpiringCOIs = async () => {
+  useAsyncEffect(
+    async (isMounted) => {
       const allCOIs = await getCOIs()
       const filtered = allCOIs.filter(coi => {
         const status = getCOIStatus(coi.expirationDate)
         return status === 'expiring' || status === 'expired'
       })
-      if (mounted) {
+      if (isMounted()) {
         setExpiringCOIs(filtered)
       }
-    }
-    loadExpiringCOIs()
-    return () => { mounted = false }
-  }, [])
+    },
+    []
+  )
 
   if (expiringCOIs.length === 0) {
     return (

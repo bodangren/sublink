@@ -1,24 +1,23 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { getWaivers } from '../db'
 import type { Waiver } from '../db'
+import { useAsyncEffect } from '../hooks/useAsyncEffect'
 
 const RecentWaivers = () => {
   const [waivers, setWaivers] = useState<Waiver[]>([])
 
-  useEffect(() => {
-    let mounted = true
-    const loadWaivers = async () => {
+  useAsyncEffect(
+    async (isMounted) => {
       const allWaivers = await getWaivers()
       const sorted = allWaivers.sort((a, b) => b.createdAt - a.createdAt)
       const recent = sorted.slice(0, 3)
-      if (mounted) {
+      if (isMounted()) {
         setWaivers(recent)
       }
-    }
-    loadWaivers()
-    return () => { mounted = false }
-  }, [])
+    },
+    []
+  )
 
   if (waivers.length === 0) {
     return (
