@@ -1,0 +1,11 @@
+{
+  "track_id": "equipment_tracking_20260312",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-03-12T09:40:00Z",
+  "updated_at": "2026-03-12T09:40:00Z",
+  "description": "Equipment Tracking - Track tools and equipment across job sites with maintenance schedules",
+  "estimated_tasks": 14,
+  "actual_tasks": null,
+  "deviation_notes": ""
+}

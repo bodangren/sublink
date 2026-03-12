@@ -58,7 +58,32 @@ export async function generateCOINotifications(): Promise<void> {
   }
 }
 
-export async function generateInvoiceNotifications(): Promise<void> {
+export async function generateEquipmentNotifications(): Promise<void> {
+  const equipment = await getEquipmentNeedingMaintenance()
+  
+  for (const item of equipment) {
+    await removeExistingNotification('equipment', item.id, 'equipment_maintenance')
+    
+    if (!item.nextMaintenanceDate) continue
+
+    const daysUntil = getDaysUntil(item.nextMaintenanceDate!)
+    if (daysUntil <= EQUIPMENT_MAINTENANCE_DAYS) {
+      const priority: NotificationPriority = daysUntil < 0 ? 'high' : 'medium'
+      const intervalText = item.maintenanceIntervalDays ? `every ${item.maintenanceIntervalDays} days` : ''
+      const isOverdue = daysUntil <= 0 ? 'today' : `in ${daysUntil} days`
+      const message = `${item.name} maintenance is ${isOverdue ? 'today' : ` (${item.maintenanceIntervalDays}-day interval). Keep your tools in top condition.`
+      await saveNotification({
+        type: 'equipment_maintenance',
+        title: 'Equipment Maintenance Due',
+        message,
+        entityType: 'equipment',
+        entityId: item.id,
+        priority,
+        read: false,
+      })
+    }
+  }
+}
   const invoices = await getInvoices()
   
   for (const invoice of invoices) {

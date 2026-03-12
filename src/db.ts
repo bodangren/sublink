@@ -6,6 +6,36 @@ export type PaymentMethod = 'check' | 'cash' | 'ach' | 'credit_card' | 'other'
 export type EstimateStatus = 'draft' | 'sent' | 'accepted' | 'declined' | 'converted'
 export type NotificationType = 'coi_expiration' | 'invoice_overdue' | 'project_deadline'
 export type NotificationPriority = 'high' | 'medium' | 'low'
+export type EquipmentCategory = 'power_tool' | 'hand_tool' | 'heavy_equipment' | 'safety_gear' | 'vehicle' | 'other'
+export type EquipmentStatus = 'active' | 'in_repair' | 'retired'
+
+export interface MaintenanceLog {
+  date: string
+  notes: string
+  performedBy?: string
+}
+
+export interface Equipment {
+  id: string
+  name: string
+  description?: string
+  category: EquipmentCategory
+  serialNumber?: string
+  modelNumber?: string
+  purchaseDate?: string
+  purchasePrice?: number
+  currentProjectId?: string
+  currentProjectName?: string
+  assignedDate?: string
+  lastMaintenanceDate?: string
+  nextMaintenanceDate?: string
+  maintenanceIntervalDays?: number
+  maintenanceNotes?: string
+  maintenanceHistory?: MaintenanceLog[]
+  status: EquipmentStatus
+  createdAt: number
+  updatedAt: number
+}
 
 export interface Notification {
   id: string
@@ -278,6 +308,11 @@ export interface SubLinkDB extends DBSchema {
     value: Notification
     indexes: { 'by-read': number, 'by-type': string }
   }
+  equipment: {
+    key: string
+    value: Equipment
+    indexes: { 'by-project': string, 'by-status': string, 'by-category': string }
+  }
 }
 
 export type Project = SubLinkDB['projects']['value']
@@ -293,11 +328,12 @@ export type Payment = SubLinkDB['payments']['value']
 export type Estimate = SubLinkDB['estimates']['value']
 export type MileageEntry = SubLinkDB['mileageEntries']['value']
 export type NotificationRecord = SubLinkDB['notifications']['value']
+export type EquipmentRecord = SubLinkDB['equipment']['value']
 
 let db: IDBPDatabase<SubLinkDB>
 
 export const initDB = async () => {
-  db = await openDB<SubLinkDB>('sublink-db', 14, {
+  db = await openDB<SubLinkDB>('sublink-db', 15, {
     upgrade(db, oldVersion) {
       if (oldVersion < 1) {
         db.createObjectStore('waivers', {
@@ -388,6 +424,14 @@ export const initDB = async () => {
         })
         notificationStore.createIndex('by-read', 'read')
         notificationStore.createIndex('by-type', 'type')
+      }
+      if (oldVersion < 15) {
+        const equipmentStore = db.createObjectStore('equipment', {
+          keyPath: 'id',
+        })
+        equipmentStore.createIndex('by-project', 'currentProjectId')
+        equipmentStore.createIndex('by-status', 'status')
+        equipmentStore.createIndex('by-category', 'category')
       }
     },
   })
@@ -523,6 +567,7 @@ export const clearDatabase = async () => {
   await db.clear('mileageEntries')
   await db.clear('clients')
   await db.clear('notifications')
+  await db.clear('equipment')
 }
 
 export const saveProject = async (project: Omit<SubLinkDB['projects']['value'], 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -1118,6 +1163,112 @@ export const deleteNotification = async (id: string): Promise<void> => {
 
 export const clearAllNotifications = async (): Promise<void> => {
   await db.clear('notifications')
+}
+
+export const saveEquipment = async (
+  equipment: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<string> => {
+  const id = crypto.randomUUID()
+  const now = Date.now()
+  await db.put('equipment', { ...equipment, id, createdAt: now, updatedAt: now })
+  return id
+}
+
+export const getEquipment = async (id: string): Promise<Equipment | undefined> => {
+  return await db.get('equipment', id)
+}
+
+export const getAllEquipment = async (): Promise<Equipment[]> => {
+  const equipment = await db.getAll('equipment')
+  return equipment.sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export const getEquipmentByProject = async (projectId: string): Promise<Equipment[]> => {
+  const equipment = await db.getAllFromIndex('equipment', 'by-project', projectId)
+  return equipment.sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export const getEquipmentByStatus = async (status: EquipmentStatus): Promise<Equipment[]> => {
+  const equipment = await db.getAllFromIndex('equipment', 'by-status', status)
+  return equipment.sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export const getEquipmentByCategory = async (category: EquipmentCategory): Promise<Equipment[]> => {
+  const equipment = await db.getAllFromIndex('equipment', 'by-category', category)
+  return equipment.sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export const getEquipmentNeedingMaintenance = async (): Promise<Equipment[]> => {
+  const equipment = await db.getAll('equipment')
+  const today = new Date().toISOString().split('T')[0]
+  return equipment
+    .filter(e => e.status === 'active' && e.nextMaintenanceDate && e.nextMaintenanceDate <= today)
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export const updateEquipment = async (
+  id: string,
+  updates: Partial<Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>>
+): Promise<void> => {
+  const existing = await db.get('equipment', id)
+  if (existing) {
+    await db.put('equipment', { ...existing, ...updates, updatedAt: Date.now() })
+  }
+}
+
+export const assignEquipmentToProject = async (
+  equipmentId: string,
+  projectId: string | undefined,
+  projectName: string | undefined
+): Promise<void> => {
+  const existing = await db.get('equipment', equipmentId)
+  if (existing) {
+    await db.put('equipment', {
+      ...existing,
+      currentProjectId: projectId,
+      currentProjectName: projectName,
+      assignedDate: projectId ? new Date().toISOString().split('T')[0] : undefined,
+      updatedAt: Date.now(),
+    })
+  }
+}
+
+export const logEquipmentMaintenance = async (
+  equipmentId: string,
+  log: Omit<MaintenanceLog, 'date'>
+): Promise<void> => {
+  const existing = await db.get('equipment', equipmentId)
+  if (existing) {
+    const maintenanceHistory = existing.maintenanceHistory || []
+    const newLog: MaintenanceLog = {
+      ...log,
+      date: new Date().toISOString().split('T')[0],
+    }
+    let nextMaintenanceDate = existing.nextMaintenanceDate
+    if (existing.maintenanceIntervalDays) {
+      const nextDate = new Date()
+      nextDate.setDate(nextDate.getDate() + existing.maintenanceIntervalDays)
+      nextMaintenanceDate = nextDate.toISOString().split('T')[0]
+    }
+    await db.put('equipment', {
+      ...existing,
+      lastMaintenanceDate: newLog.date,
+      nextMaintenanceDate,
+      maintenanceHistory: [...maintenanceHistory, newLog],
+      updatedAt: Date.now(),
+    })
+  }
+}
+
+export const deleteEquipment = async (id: string): Promise<void> => {
+  await db.delete('equipment', id)
+}
+
+export const getTotalEquipmentValue = async (): Promise<number> => {
+  const equipment = await db.getAll('equipment')
+  return equipment
+    .filter(e => e.status === 'active' && e.purchasePrice)
+    .reduce((sum, e) => sum + (e.purchasePrice || 0), 0)
 }
 
 export const DEFAULT_HOURLY_RATE = '75'

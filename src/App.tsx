@@ -47,6 +47,10 @@ import Settings from './components/Settings'
 import CalendarView from './components/CalendarView'
 import NotificationList from './components/NotificationList'
 import NotificationBadge from './components/NotificationBadge'
+import EquipmentList from './components/EquipmentList'
+import EquipmentForm from './components/EquipmentForm'
+import EquipmentDetail from './components/EquipmentDetail'
+import DashboardEquipment from './components/DashboardEquipment'
 import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLog, getProjects, getTimeEntry, getInvoice, getExpense, getEstimates, getAllMileage } from './db'
 import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry, Invoice, Expense, Estimate, MileageEntry, Client } from './db'
 import { getCOIStatus, getStatusColor, getStatusLabel } from './utils/coiStatus'
@@ -64,6 +68,7 @@ const Home = () => {
       <TimeSummary />
       <TodayLogStatus />
       <DashboardNotifications />
+      <DashboardEquipment />
       <ExpiringCOIs />
       <RecentTasks />
       <RecentWaivers />
@@ -90,6 +95,9 @@ const Home = () => {
         </NavLink>
         <NavLink to="/mileage/new">
           <button style={{ marginTop: '0.5rem' }}>Log Mileage</button>
+        </NavLink>
+        <NavLink to="/equipment/new">
+          <button style={{ marginTop: '0.5rem' }}>Add Equipment</button>
         </NavLink>
       </div>
     </div>

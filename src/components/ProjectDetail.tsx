@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useParams, useNavigate } from 'react-router-dom'
-import { getProject, getTasksByProject, getDailyLogsByProject, getWaiversByProject, deleteProject, getExpensesByProject, getTimeEntriesByProject, getSetting, DEFAULT_HOURLY_RATE } from '../db'
-import type { Project, Task, DailyLog, Waiver, Expense, TimeEntry } from '../db'
+import { getProject, getTasksByProject, getDailyLogsByProject, getWaiversByProject, getExpensesByProject, getTimeEntriesByProject, deleteProject, getSetting, getEquipmentByProject, DEFAULT_HOURLY_RATE } from '../db'
+import type { Project, Task, DailyLog, Waiver, Expense, TimeEntry, Equipment } from '../db'
 import { formatCurrency } from '../hooks/useEditWrapper'
 import { useConfirm } from '../hooks/useConfirm'
 import { calculateProjectProfitability, formatHours, formatCurrency as formatProfitCurrency, formatPercent } from '../utils/profitability'
@@ -16,6 +16,7 @@ const ProjectDetail = () => {
   const [waivers, setWaivers] = useState<Waiver[]>([])
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
+  const [equipment, setEquipment] = useState<Equipment[]>([])
   const [hourlyRate, setHourlyRate] = useState<number>(parseFloat(DEFAULT_HOURLY_RATE))
   const [loading, setLoading] = useState(true)
 
@@ -30,8 +31,9 @@ const ProjectDetail = () => {
       getWaiversByProject(id),
       getExpensesByProject(id),
       getTimeEntriesByProject(id),
-      getSetting('hourlyRate', DEFAULT_HOURLY_RATE)
-    ]).then(([proj, taskList, logList, waiverList, expenseList, timeList, rate]) => {
+      getSetting('hourlyRate', DEFAULT_HOURLY_RATE),
+      getEquipmentByProject(id),
+    ]).then(([proj, taskList, logList, waiverList, expenseList, timeList, rate, equipmentList]) => {
       if (mounted) {
         setProject(proj || null)
         setTasks(taskList.sort((a, b) => b.updatedAt - a.updatedAt))
@@ -40,6 +42,7 @@ const ProjectDetail = () => {
         setExpenses(expenseList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
         setTimeEntries(timeList.sort((a, b) => b.startTime - a.startTime))
         setHourlyRate(parseFloat(rate) || parseFloat(DEFAULT_HOURLY_RATE))
+        setEquipment(equipmentList)
         setLoading(false)
       }
     })
@@ -400,13 +403,37 @@ const ProjectDetail = () => {
               </li>
             ))}
           </ul>
+        ))}
+      </div>
+
+      {equipment.length > 0 && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <h2 style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>Equipment on Site</h2>
+          <ul style={{ listStyle: 'none', padding: 0 }}>
+            {equipment.map(item => (
+              <li key={item.id} style={{ 
+                backgroundColor: 'var(--secondary-bg)', 
+                padding: '0.75rem', 
+                marginBottom: '0.5rem',
+                border: '1px solid var(--border-color)',
+                borderRadius: '4px'
+              }}>
+                <NavLink to={`/equipment/${item.id}`} style={{ fontWeight: 'bold' }}>
+                  {item.name}
+                </NavLink>
+                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                  {item.description || item.category}
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
-      {tasks.length === 0 && logs.length === 0 && waivers.length === 0 && expenses.length === 0 && (
+      {tasks.length === 0 && logs.length === 0 && waivers.length === 0 && expenses.length === 0 && equipment.length === 0 && (
         <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
           <p>No activity yet for this project.</p>
-          <p>Use the buttons above to add daily logs, tasks, expenses, or waivers.</p>
+          <p>Use the buttons above to add daily logs, tasks, expenses, waivers, or assign equipment.</p>
         </div>
       )}
     </div>
