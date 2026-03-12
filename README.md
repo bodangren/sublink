@@ -5,6 +5,7 @@
 SubLink is a local-first mobile Progressive Web App (PWA) designed for subcontractors in the construction industry. It streamlines compliance, proof-of-work, and financial documentation directly from the job site.
 
 ### Key Features
+- **Notification System:** Stay on top of important business events with alerts for COI expirations (7-day warning), overdue invoices, and project deadlines (3-day warning). Notification badge in navigation shows unread count. Dashboard widget displays recent alerts. All notifications work offline and persist in IndexedDB.
 - **Calendar View:** Visual monthly calendar showing tasks, daily logs, and project deadlines at a glance. Color-coded indicators help identify scheduled items quickly. Tap any day to see details and add new items.
 - **Project Profitability Dashboard:** See real-time financial metrics for each project including labor costs, expenses, profit/loss, and margin percentage. Configure your hourly rate in Settings to get accurate cost calculations.
 - **Information-Rich Dashboard:** At-a-glance overview of your operations with real-time stats, daily log status, COI expiration alerts, and recent activity feeds including estimates, invoices, payments, and mileage. Stay on top of your business without navigating through multiple screens.

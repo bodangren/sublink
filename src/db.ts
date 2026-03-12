@@ -4,6 +4,20 @@ import type { DBSchema, IDBPDatabase } from 'idb'
 export type ExpenseCategory = 'materials' | 'fuel' | 'equipment_rental' | 'subcontractor' | 'other'
 export type PaymentMethod = 'check' | 'cash' | 'ach' | 'credit_card' | 'other'
 export type EstimateStatus = 'draft' | 'sent' | 'accepted' | 'declined' | 'converted'
+export type NotificationType = 'coi_expiration' | 'invoice_overdue' | 'project_deadline'
+export type NotificationPriority = 'high' | 'medium' | 'low'
+
+export interface Notification {
+  id: string
+  type: NotificationType
+  title: string
+  message: string
+  entityType: 'certificate' | 'invoice' | 'project'
+  entityId: string
+  priority: NotificationPriority
+  read: boolean
+  createdAt: number
+}
 
 export interface Client {
   id: string
@@ -257,7 +271,12 @@ export interface SubLinkDB extends DBSchema {
       createdAt: number
       updatedAt: number
     }
-    indexes: { 'by-project': string, 'by-date': string }
+    indexes: { 'by-project': string; 'by-date': string }
+  }
+  notifications: {
+    key: string
+    value: Notification
+    indexes: { 'by-read': number, 'by-type': string }
   }
 }
 
@@ -273,11 +292,12 @@ export type Expense = SubLinkDB['expenses']['value']
 export type Payment = SubLinkDB['payments']['value']
 export type Estimate = SubLinkDB['estimates']['value']
 export type MileageEntry = SubLinkDB['mileageEntries']['value']
+export type NotificationRecord = SubLinkDB['notifications']['value']
 
 let db: IDBPDatabase<SubLinkDB>
 
 export const initDB = async () => {
-  db = await openDB<SubLinkDB>('sublink-db', 13, {
+  db = await openDB<SubLinkDB>('sublink-db', 14, {
     upgrade(db, oldVersion) {
       if (oldVersion < 1) {
         db.createObjectStore('waivers', {
@@ -361,6 +381,13 @@ export const initDB = async () => {
         db.createObjectStore('settings', {
           keyPath: 'key',
         })
+      }
+      if (oldVersion < 14) {
+        const notificationStore = db.createObjectStore('notifications', {
+          keyPath: 'id',
+        })
+        notificationStore.createIndex('by-read', 'read')
+        notificationStore.createIndex('by-type', 'type')
       }
     },
   })
@@ -495,6 +522,7 @@ export const clearDatabase = async () => {
   await db.clear('estimates')
   await db.clear('mileageEntries')
   await db.clear('clients')
+  await db.clear('notifications')
 }
 
 export const saveProject = async (project: Omit<SubLinkDB['projects']['value'], 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -1043,6 +1071,53 @@ export const getSetting = async (key: string, defaultValue: string = ''): Promis
 
 export const setSetting = async (key: string, value: string): Promise<void> => {
   await db.put('settings', { key, value })
+}
+
+export const saveNotification = async (
+  notification: Omit<Notification, 'id' | 'createdAt'>
+): Promise<string> => {
+  const id = crypto.randomUUID()
+  const createdAt = Date.now()
+  await db.put('notifications', { ...notification, id, createdAt })
+  return id
+}
+
+export const getNotification = async (id: string): Promise<Notification | undefined> => {
+  return await db.get('notifications', id)
+}
+
+export const getAllNotifications = async (): Promise<Notification[]> => {
+  const notifications = await db.getAll('notifications')
+  return notifications.sort((a, b) => b.createdAt - a.createdAt)
+}
+
+export const getUnreadNotifications = async (): Promise<Notification[]> => {
+  const notifications = await db.getAll('notifications')
+  return notifications.filter(n => !n.read).sort((a, b) => b.createdAt - a.createdAt)
+}
+
+export const markNotificationRead = async (id: string): Promise<void> => {
+  const existing = await db.get('notifications', id)
+  if (existing) {
+    await db.put('notifications', { ...existing, read: true })
+  }
+}
+
+export const markAllNotificationsRead = async (): Promise<void> => {
+  const notifications = await db.getAll('notifications')
+  for (const notification of notifications) {
+    if (!notification.read) {
+      await db.put('notifications', { ...notification, read: true })
+    }
+  }
+}
+
+export const deleteNotification = async (id: string): Promise<void> => {
+  await db.delete('notifications', id)
+}
+
+export const clearAllNotifications = async (): Promise<void> => {
+  await db.clear('notifications')
 }
 
 export const DEFAULT_HOURLY_RATE = '75'

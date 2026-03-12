@@ -35,6 +35,7 @@ import EstimateDetail from './components/EstimateDetail'
 import RecentEstimates from './components/RecentEstimates'
 import RecentPayments from './components/RecentPayments'
 import RecentMileage from './components/RecentMileage'
+import DashboardNotifications from './components/DashboardNotifications'
 import MileageList from './components/MileageList'
 import MileageForm from './components/MileageForm'
 import MileageDetail from './components/MileageDetail'
@@ -44,9 +45,12 @@ import ClientForm from './components/ClientForm'
 import ClientDetail from './components/ClientDetail'
 import Settings from './components/Settings'
 import CalendarView from './components/CalendarView'
+import NotificationList from './components/NotificationList'
+import NotificationBadge from './components/NotificationBadge'
 import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLog, getProjects, getTimeEntry, getInvoice, getExpense, getEstimates, getAllMileage } from './db'
 import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry, Invoice, Expense, Estimate, MileageEntry, Client } from './db'
 import { getCOIStatus, getStatusColor, getStatusLabel } from './utils/coiStatus'
+import { generateAllNotifications } from './utils/notifications'
 import { useItemId, useTaskIdFromPath, useEditItem, formatCurrency } from './hooks/useEditWrapper'
 import { ConfirmProvider, useConfirm } from './hooks/useConfirm'
 
@@ -59,6 +63,7 @@ const Home = () => {
       <DashboardStats />
       <TimeSummary />
       <TodayLogStatus />
+      <DashboardNotifications />
       <ExpiringCOIs />
       <RecentTasks />
       <RecentWaivers />
@@ -524,11 +529,16 @@ const ClientEditWrapper = () => {
   return <ClientForm editId={id} />
 }
 
-const AppShell = () => (
-  <div className="app-shell">
-    <div className="content">
-      <Routes>
-        <Route path="/" element={<Home />} />
+const AppShell = () => {
+  useEffect(() => {
+    generateAllNotifications()
+  }, [])
+
+  return (
+    <div className="app-shell">
+      <div className="content">
+        <Routes>
+          <Route path="/" element={<Home />} />
         <Route path="/waivers" element={<Waivers />} />
         <Route path="/waivers/new" element={<WaiverForm />} />
         <Route path="/compliance" element={<Compliance />} />
@@ -572,6 +582,7 @@ const AppShell = () => (
         <Route path="/clients/:id" element={<ClientDetail />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/calendar" element={<CalendarView />} />
+        <Route path="/notifications" element={<NotificationList />} />
       </Routes>
     </div>
     <nav className="bottom-nav">
@@ -580,6 +591,9 @@ const AppShell = () => (
       </NavLink>
       <NavLink to="/calendar" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Calendar</span>
+      </NavLink>
+      <NavLink to="/notifications" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+        <NotificationBadge />
       </NavLink>
       <NavLink to="/logs" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Logs</span>
@@ -595,7 +609,8 @@ const AppShell = () => (
       </NavLink>
     </nav>
   </div>
-)
+  )
+}
 
 function App() {
   if (import.meta.env.VITE_ROUTER_MODE === 'hash') {

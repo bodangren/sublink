@@ -55,3 +55,5 @@ This file tracks all major tracks for the project. Each track has its own detail
   *Link: [./archive/calendar_view_20260311/](./archive/calendar_view_20260311/)*
 - [x] **Track: Code Cleanup & Refactor - 2026-03-12.**
   *Link: [./archive/code_cleanup_20260312/](./archive/code_cleanup_20260312/)*
+- [x] **Track: Notification System - Alerts for COI, Invoices, and Deadlines.**
+  *Link: [./archive/notification_system_20260312/](./archive/notification_system_20260312/)*
