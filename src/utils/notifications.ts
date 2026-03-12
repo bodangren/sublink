@@ -5,12 +5,14 @@ import {
   getAllNotifications,
   saveNotification,
   deleteNotification,
+  getEquipmentNeedingMaintenance,
   type NotificationType,
   type NotificationPriority,
 } from '../db'
 
 const COI_WARNING_DAYS = 7
 const PROJECT_WARNING_DAYS = 3
+const EQUIPMENT_MAINTENANCE_DAYS = 7
 
 function getDaysUntil(dateString: string): number {
   const today = new Date()
@@ -66,12 +68,12 @@ export async function generateEquipmentNotifications(): Promise<void> {
     
     if (!item.nextMaintenanceDate) continue
 
-    const daysUntil = getDaysUntil(item.nextMaintenanceDate!)
+    const daysUntil = getDaysUntil(item.nextMaintenanceDate)
     if (daysUntil <= EQUIPMENT_MAINTENANCE_DAYS) {
       const priority: NotificationPriority = daysUntil < 0 ? 'high' : 'medium'
-      const intervalText = item.maintenanceIntervalDays ? `every ${item.maintenanceIntervalDays} days` : ''
-      const isOverdue = daysUntil <= 0 ? 'today' : `in ${daysUntil} days`
-      const message = `${item.name} maintenance is ${isOverdue ? 'today' : ` (${item.maintenanceIntervalDays}-day interval). Keep your tools in top condition.`
+      const when = daysUntil < 0 ? `${Math.abs(daysUntil)} days ago` : `in ${daysUntil} days`
+      const message = `${item.name} maintenance is due ${when}`
+      
       await saveNotification({
         type: 'equipment_maintenance',
         title: 'Equipment Maintenance Due',
@@ -84,6 +86,8 @@ export async function generateEquipmentNotifications(): Promise<void> {
     }
   }
 }
+
+export async function generateInvoiceNotifications(): Promise<void> {
   const invoices = await getInvoices()
   
   for (const invoice of invoices) {
@@ -140,4 +144,5 @@ export async function generateAllNotifications(): Promise<void> {
   await generateCOINotifications()
   await generateInvoiceNotifications()
   await generateProjectNotifications()
+  await generateEquipmentNotifications()
 }

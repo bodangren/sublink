@@ -57,5 +57,5 @@ This file tracks all major tracks for the project. Each track has its own detail
   *Link: [./archive/code_cleanup_20260312/](./archive/code_cleanup_20260312/)*
 - [x] **Track: Notification System - Alerts for COI, Invoices, and Deadlines.**
   *Link: [./archive/notification_system_20260312/](./archive/notification_system_20260312/)*
-- [ ] **Track: Equipment Tracking - Track tools and equipment across job sites.**
-  *Link: [./tracks/equipment_tracking_20260312/](./tracks/equipment_tracking_20260312/)*
+- [x] **Track: Equipment Tracking - Track tools and equipment across job sites.**
+  *Link: [./archive/equipment_tracking_20260312/](./archive/equipment_tracking_20260312/)*

@@ -537,6 +537,26 @@ const ClientEditWrapper = () => {
   return <ClientForm editId={id} />
 }
 
+const EquipmentDetailWrapper = () => {
+  const id = useItemId() || ''
+
+  if (!id || id.trim() === '') {
+    return (
+      <div className="container">
+        <p>Equipment not found.</p>
+        <NavLink to="/equipment"><button>Back to Equipment</button></NavLink>
+      </div>
+    )
+  }
+
+  return <EquipmentDetail equipmentId={id} />
+}
+
+const EquipmentEditWrapper = () => {
+  const id = useItemId() || ''
+  return <EquipmentForm editId={id} />
+}
+
 const AppShell = () => {
   useEffect(() => {
     generateAllNotifications()
@@ -591,6 +611,10 @@ const AppShell = () => {
         <Route path="/settings" element={<Settings />} />
         <Route path="/calendar" element={<CalendarView />} />
         <Route path="/notifications" element={<NotificationList />} />
+        <Route path="/equipment" element={<EquipmentList />} />
+        <Route path="/equipment/new" element={<EquipmentForm />} />
+        <Route path="/equipment/edit/:id" element={<EquipmentEditWrapper />} />
+        <Route path="/equipment/:id" element={<EquipmentDetailWrapper />} />
       </Routes>
     </div>
     <nav className="bottom-nav">
@@ -608,6 +632,9 @@ const AppShell = () => {
       </NavLink>
       <NavLink to="/projects" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Projects</span>
+      </NavLink>
+      <NavLink to="/equipment" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+        <span>Equipment</span>
       </NavLink>
       <NavLink to="/clients" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Clients</span>

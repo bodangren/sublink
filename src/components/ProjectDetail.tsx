@@ -403,8 +403,8 @@ const ProjectDetail = () => {
               </li>
             ))}
           </ul>
-        ))}
-      </div>
+        </div>
+      )}
 
       {equipment.length > 0 && (
         <div style={{ marginBottom: '1.5rem' }}>

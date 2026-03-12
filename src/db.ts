@@ -4,7 +4,7 @@ import type { DBSchema, IDBPDatabase } from 'idb'
 export type ExpenseCategory = 'materials' | 'fuel' | 'equipment_rental' | 'subcontractor' | 'other'
 export type PaymentMethod = 'check' | 'cash' | 'ach' | 'credit_card' | 'other'
 export type EstimateStatus = 'draft' | 'sent' | 'accepted' | 'declined' | 'converted'
-export type NotificationType = 'coi_expiration' | 'invoice_overdue' | 'project_deadline'
+export type NotificationType = 'coi_expiration' | 'invoice_overdue' | 'project_deadline' | 'equipment_maintenance'
 export type NotificationPriority = 'high' | 'medium' | 'low'
 export type EquipmentCategory = 'power_tool' | 'hand_tool' | 'heavy_equipment' | 'safety_gear' | 'vehicle' | 'other'
 export type EquipmentStatus = 'active' | 'in_repair' | 'retired'
@@ -42,7 +42,7 @@ export interface Notification {
   type: NotificationType
   title: string
   message: string
-  entityType: 'certificate' | 'invoice' | 'project'
+  entityType: 'certificate' | 'invoice' | 'project' | 'equipment'
   entityId: string
   priority: NotificationPriority
   read: boolean
