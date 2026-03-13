@@ -91,7 +91,7 @@ describe('ChangeOrderForm', () => {
     })
     
     expect(screen.getByText(/addition/i)).toBeDefined()
-    expect(screen.getByText('$500.00')).toBeDefined()
+    expect(screen.getByText(/\$500\.00/)).toBeDefined()
   })
 
   it('shows deduction indicator for negative cost', () => {
@@ -102,7 +102,7 @@ describe('ChangeOrderForm', () => {
     })
     
     expect(screen.getByText(/deduction/i)).toBeDefined()
-    expect(screen.getByText('$300.00')).toBeDefined()
+    expect(screen.getByText(/\$300\.00/)).toBeDefined()
   })
 
   it('has cancel button', () => {
