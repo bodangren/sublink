@@ -94,22 +94,42 @@ label {
   height: 4rem;
   background-color: var(--secondary-bg);
   display: flex;
-  justify-content: space-around;
+  justify-content: flex-start;
   align-items: center;
   border-top: 2px solid var(--border-color);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 0.25rem;
+  padding: 0 0.5rem;
+}
+
+.bottom-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-item {
   color: var(--text-color);
   text-decoration: none;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding: 0.5rem 0.75rem;
+  min-width: 60px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  transition: background-color 0.2s;
 }
 
 .nav-item.active {
   color: var(--accent-color);
+  background-color: var(--input-bg);
+}
+
+.nav-notifications {
+  margin-left: auto;
 }
 
 .signature-container {

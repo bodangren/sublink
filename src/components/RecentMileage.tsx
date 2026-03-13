@@ -25,20 +25,20 @@ const RecentMileage = () => {
   )
 
   return (
-    <div style={{ padding: '1rem', backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #ddd' }}>
+    <div style={{ padding: '1rem', backgroundColor: 'var(--secondary-bg)', borderRadius: '8px', border: '2px solid var(--border-color)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-        <h3 style={{ margin: 0 }}>Recent Mileage</h3>
+        <h3 style={{ margin: 0, padding: 0 }}>Recent Mileage</h3>
         <NavLink to="/mileage/new">
-          <button style={{ fontSize: '0.85rem', padding: '0.25rem 0.75rem' }}>+ Log</button>
+          <button style={{ fontSize: '0.85rem', padding: '0.25rem 0.75rem', marginTop: 0, width: 'auto' }}>+ Log</button>
         </NavLink>
       </div>
       
-      <div style={{ marginBottom: '1rem', padding: '0.5rem', backgroundColor: '#e3f2fd', borderRadius: '3px' }}>
-        <strong>This Month: {totalMiles.toFixed(1)} mi</strong>
+      <div style={{ marginBottom: '1rem', padding: '0.5rem', backgroundColor: 'var(--input-bg)', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+        <strong style={{ color: 'var(--accent-color)' }}>This Month: {totalMiles.toFixed(1)} mi</strong>
       </div>
       
       {mileage.length === 0 ? (
-        <p style={{ color: '#666', margin: 0 }}>No mileage entries yet</p>
+        <p style={{ color: '#999', margin: 0 }}>No mileage entries yet</p>
       ) : (
         <div>
           {mileage.map(entry => (
@@ -48,7 +48,7 @@ const RecentMileage = () => {
               style={{ 
                 display: 'block', 
                 padding: '0.5rem 0', 
-                borderBottom: '1px solid #eee',
+                borderBottom: '1px solid var(--border-color)',
                 textDecoration: 'none',
                 color: 'inherit'
               }}
@@ -56,7 +56,7 @@ const RecentMileage = () => {
               <div style={{ fontWeight: 'bold' }}>
                 {entry.startLocation} → {entry.endLocation}
               </div>
-              <div style={{ fontSize: '0.85rem', color: '#666' }}>
+              <div style={{ fontSize: '0.85rem', color: '#999' }}>
                 {new Date(entry.date).toLocaleDateString()} • {entry.miles.toFixed(1)} mi
               </div>
             </NavLink>
@@ -67,7 +67,7 @@ const RecentMileage = () => {
               display: 'block', 
               padding: '0.5rem 0', 
               textAlign: 'center',
-              color: '#1976d2',
+              color: 'var(--accent-color)',
               textDecoration: 'none'
             }}
           >

@@ -665,9 +665,6 @@ const AppShell = () => {
       <NavLink to="/calendar" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Calendar</span>
       </NavLink>
-      <NavLink to="/notifications" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-        <NotificationBadge />
-      </NavLink>
       <NavLink to="/logs" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Logs</span>
       </NavLink>
@@ -675,16 +672,19 @@ const AppShell = () => {
         <span>Projects</span>
       </NavLink>
       <NavLink to="/change-orders" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-        <span>Change Orders</span>
+        <span>Orders</span>
       </NavLink>
       <NavLink to="/equipment" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-        <span>Equipment</span>
+        <span>Equip</span>
       </NavLink>
       <NavLink to="/clients" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Clients</span>
       </NavLink>
       <NavLink to="/settings" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Settings</span>
+      </NavLink>
+      <NavLink to="/notifications" className={({ isActive }) => isActive ? 'nav-item nav-notifications active' : 'nav-item nav-notifications'}>
+        <NotificationBadge />
       </NavLink>
     </nav>
   </div>
