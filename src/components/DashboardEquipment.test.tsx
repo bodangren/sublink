@@ -27,7 +27,7 @@ describe('DashboardEquipment', () => {
     renderWithRouter(<DashboardEquipment />)
     
     await waitFor(() => {
-      expect(screen.getByText('All equipment is up to date on maintenance.')).toBeInTheDocument()
+      expect(screen.getByText(/all equipment is up to date/i)).toBeInTheDocument()
     })
   })
 

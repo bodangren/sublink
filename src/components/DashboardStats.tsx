@@ -23,18 +23,86 @@ const DashboardStats = () => {
   )
 
   return (
-    <div className="dashboard-stats">
-      <div className="stat-card">
-        <div className="stat-number">{taskCount}</div>
-        <div className="stat-label">Tasks</div>
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(3, 1fr)',
+      gap: '0.75rem',
+      marginBottom: '1rem',
+    }}>
+      <div style={{
+        backgroundColor: 'var(--secondary-bg)',
+        border: '2px solid var(--border-color)',
+        borderRadius: '8px',
+        padding: '1rem 0.75rem',
+        textAlign: 'center',
+      }}>
+        <div style={{
+          fontSize: '2rem',
+          fontWeight: 'bold',
+          color: 'var(--accent-color)',
+          lineHeight: 1,
+        }}>
+          {taskCount}
+        </div>
+        <div style={{
+          fontSize: '0.7rem',
+          color: 'var(--text-color)',
+          marginTop: '0.25rem',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+        }}>
+          Tasks
+        </div>
       </div>
-      <div className="stat-card">
-        <div className="stat-number">{waiverCount}</div>
-        <div className="stat-label">Waivers</div>
+      <div style={{
+        backgroundColor: 'var(--secondary-bg)',
+        border: '2px solid var(--border-color)',
+        borderRadius: '8px',
+        padding: '1rem 0.75rem',
+        textAlign: 'center',
+      }}>
+        <div style={{
+          fontSize: '2rem',
+          fontWeight: 'bold',
+          color: 'var(--accent-color)',
+          lineHeight: 1,
+        }}>
+          {waiverCount}
+        </div>
+        <div style={{
+          fontSize: '0.7rem',
+          color: 'var(--text-color)',
+          marginTop: '0.25rem',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+        }}>
+          Waivers
+        </div>
       </div>
-      <div className="stat-card">
-        <div className="stat-number">{coiCount}</div>
-        <div className="stat-label">Certificates</div>
+      <div style={{
+        backgroundColor: 'var(--secondary-bg)',
+        border: '2px solid var(--border-color)',
+        borderRadius: '8px',
+        padding: '1rem 0.75rem',
+        textAlign: 'center',
+      }}>
+        <div style={{
+          fontSize: '2rem',
+          fontWeight: 'bold',
+          color: 'var(--accent-color)',
+          lineHeight: 1,
+        }}>
+          {coiCount}
+        </div>
+        <div style={{
+          fontSize: '0.7rem',
+          color: 'var(--text-color)',
+          marginTop: '0.25rem',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+        }}>
+          Certs
+        </div>
       </div>
     </div>
   )

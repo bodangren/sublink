@@ -12,7 +12,19 @@ const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
   other: '#757575'
 }
 
-const RecentExpenses = () => {
+const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
+  materials: 'Materials',
+  fuel: 'Fuel',
+  equipment_rental: 'Rental',
+  subcontractor: 'Sub',
+  other: 'Other'
+}
+
+interface RecentExpensesProps {
+  inline?: boolean
+}
+
+const RecentExpenses = ({ inline = false }: RecentExpensesProps) => {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [totalAmount, setTotalAmount] = useState<number>(0)
 
@@ -29,18 +41,75 @@ const RecentExpenses = () => {
     []
   )
 
-  if (expenses.length === 0) {
-    return (
-      <div className="dashboard-card">
-        <div className="card-header">
-          <h3>Recent Expenses</h3>
-        </div>
-        <p className="card-text">No expenses recorded. Start tracking job costs.</p>
-        <NavLink to="/expenses/new">
-          <button className="card-button">Add Expense</button>
-        </NavLink>
+  const content = expenses.length === 0 ? (
+    <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '0.875rem' }}>
+      No expenses yet. <NavLink to="/expenses/new" style={{ color: 'var(--accent-color)' }}>Add one</NavLink>
+    </p>
+  ) : (
+    <>
+      <div style={{
+        marginBottom: '0.75rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      }}>
+        <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Recent Total</span>
+        <strong style={{ color: 'var(--accent-color)' }}>${totalAmount.toFixed(2)}</strong>
       </div>
-    )
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        {expenses.map(expense => (
+          <li
+            key={expense.id}
+            style={{
+              padding: '0.75rem 0',
+              borderBottom: '1px solid var(--border-color)',
+            }}
+          >
+            <NavLink
+              to={`/expenses/${expense.id}`}
+              style={{ textDecoration: 'none', color: 'inherit', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            >
+              <div>
+                <div style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>{expense.description}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                  {new Date(expense.date).toLocaleDateString()}
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{
+                  backgroundColor: CATEGORY_COLORS[expense.category],
+                  color: '#fff',
+                  padding: '0.125rem 0.375rem',
+                  borderRadius: '4px',
+                  fontSize: '0.65rem',
+                  fontWeight: 'bold',
+                }}>
+                  {CATEGORY_LABELS[expense.category]}
+                </span>
+                <span style={{ fontWeight: 'bold' }}>${expense.amount.toFixed(2)}</span>
+              </div>
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+      <NavLink
+        to="/expenses"
+        style={{
+          display: 'block',
+          textAlign: 'center',
+          color: 'var(--accent-color)',
+          textDecoration: 'none',
+          fontSize: '0.875rem',
+          paddingTop: '0.75rem',
+        }}
+      >
+        View All →
+      </NavLink>
+    </>
+  )
+
+  if (inline) {
+    return <div>{content}</div>
   }
 
   return (
@@ -51,34 +120,7 @@ const RecentExpenses = () => {
           ${totalAmount.toFixed(2)}
         </span>
       </div>
-      <ul className="card-list">
-        {expenses.map(expense => (
-          <li key={expense.id} className="card-list-item">
-            <NavLink to={`/expenses/${expense.id}`} className="item-link">
-              <div className="item-header">
-                <span className="item-title">{expense.description}</span>
-                <span style={{
-                  backgroundColor: CATEGORY_COLORS[expense.category],
-                  color: '#fff',
-                  padding: '0.125rem 0.375rem',
-                  borderRadius: '4px',
-                  fontSize: '0.625rem',
-                  marginLeft: '0.5rem'
-                }}>
-                  {expense.category.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div className="item-details">
-                <span>{new Date(expense.date).toLocaleDateString()}</span>
-                <span style={{ fontWeight: 'bold' }}>${expense.amount.toFixed(2)}</span>
-              </div>
-            </NavLink>
-          </li>
-        ))}
-      </ul>
-      <NavLink to="/expenses" className="card-link">
-        <button className="card-button">View All Expenses</button>
-      </NavLink>
+      {content}
     </div>
   )
 }

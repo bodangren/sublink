@@ -14,7 +14,11 @@ const formatCurrency = (amount: number): string => {
   }).format(amount)
 }
 
-const RecentPayments = () => {
+interface RecentPaymentsProps {
+  inline?: boolean
+}
+
+const RecentPayments = ({ inline = false }: RecentPaymentsProps) => {
   const [payments, setPayments] = useState<PaymentWithInvoice[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -38,66 +42,46 @@ const RecentPayments = () => {
     return () => { mounted = false }
   }, [])
 
-  if (loading) {
-    return (
-      <div className="dashboard-card">
-        <div className="card-header">
-          <h3>Recent Payments</h3>
-        </div>
-        <p className="card-text">Loading...</p>
-      </div>
-    )
-  }
+  if (loading || payments.length === 0) return null
 
-  if (payments.length === 0) {
-    return (
-      <div className="dashboard-card">
-        <div className="card-header">
-          <h3>Recent Payments</h3>
-        </div>
-        <p className="card-text">No payments recorded yet.</p>
-        <NavLink to="/invoices">
-          <button className="card-button">View Invoices</button>
-        </NavLink>
-      </div>
-    )
+  const content = (
+    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+      {payments.map(payment => (
+        <li
+          key={payment.id}
+          style={{
+            padding: '0.75rem 0',
+            borderBottom: '1px solid var(--border-color)',
+          }}
+        >
+          <NavLink
+            to={`/invoices/${payment.invoiceId}`}
+            style={{ textDecoration: 'none', color: 'inherit', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+          >
+            <div>
+              <div style={{ fontWeight: 'bold', fontSize: '0.95rem', color: 'var(--success-color)' }}>
+                {formatCurrency(payment.amount)}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                {payment.invoice?.invoiceNumber} • {new Date(payment.date).toLocaleDateString()}
+              </div>
+            </div>
+          </NavLink>
+        </li>
+      ))}
+    </ul>
+  )
+
+  if (inline) {
+    return <div>{content}</div>
   }
 
   return (
     <div className="dashboard-card">
       <div className="card-header">
         <h3>Recent Payments</h3>
-        <NavLink to="/invoices">
-          <button className="card-button">View All</button>
-        </NavLink>
       </div>
-      <ul className="card-list">
-        {payments.map(payment => (
-          <li key={payment.id} className="card-list-item">
-            <NavLink 
-              to={`/invoices/${payment.invoiceId}`}
-              className="item-link"
-            >
-              <div className="item-header">
-                <span className="item-title">
-                  {formatCurrency(payment.amount)}
-                </span>
-                <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                  {new Date(payment.date).toLocaleDateString()}
-                </span>
-              </div>
-              {payment.invoice && (
-                <div style={{ fontSize: '0.875rem' }}>
-                  <span style={{ fontWeight: 'bold' }}>{payment.invoice.invoiceNumber}</span>
-                  {payment.invoice.projectName && (
-                    <span style={{ color: 'var(--text-secondary)' }}> - {payment.invoice.projectName}</span>
-                  )}
-                </div>
-              )}
-            </NavLink>
-          </li>
-        ))}
-      </ul>
+      {content}
     </div>
   )
 }

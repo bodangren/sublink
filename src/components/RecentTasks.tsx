@@ -4,7 +4,11 @@ import { getTasks } from '../db'
 import type { Task } from '../db'
 import { useAsyncEffect } from '../hooks/useAsyncEffect'
 
-const RecentTasks = () => {
+interface RecentTasksProps {
+  inline?: boolean
+}
+
+const RecentTasks = ({ inline = false }: RecentTasksProps) => {
   const [tasks, setTasks] = useState<Task[]>([])
 
   useAsyncEffect(
@@ -19,18 +23,51 @@ const RecentTasks = () => {
     []
   )
 
-  if (tasks.length === 0) {
-    return (
-      <div className="dashboard-card">
-        <div className="card-header">
-          <h3>Recent Tasks</h3>
-        </div>
-        <p className="card-text">No tasks yet. Create your first task to get started.</p>
-        <NavLink to="/tasking/new">
-          <button className="card-button">Create Task</button>
-        </NavLink>
-      </div>
-    )
+  const content = tasks.length === 0 ? (
+    <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '0.875rem' }}>
+      No tasks yet. <NavLink to="/tasking/new" style={{ color: 'var(--accent-color)' }}>Create one</NavLink>
+    </p>
+  ) : (
+    <>
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        {tasks.map(task => (
+          <li
+            key={task.id}
+            style={{
+              padding: '0.75rem 0',
+              borderBottom: '1px solid var(--border-color)',
+            }}
+          >
+            <NavLink
+              to={`/tasking/${task.id}`}
+              style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+            >
+              <div style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>{task.title}</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                {new Date(task.createdAt).toLocaleDateString()}
+              </div>
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+      <NavLink
+        to="/tasking"
+        style={{
+          display: 'block',
+          textAlign: 'center',
+          color: 'var(--accent-color)',
+          textDecoration: 'none',
+          fontSize: '0.875rem',
+          paddingTop: '0.75rem',
+        }}
+      >
+        View All Tasks →
+      </NavLink>
+    </>
+  )
+
+  if (inline) {
+    return <div>{content}</div>
   }
 
   return (
@@ -38,23 +75,7 @@ const RecentTasks = () => {
       <div className="card-header">
         <h3>Recent Tasks</h3>
       </div>
-      <ul className="card-list">
-        {tasks.map(task => (
-          <li key={task.id} className="card-list-item">
-            <NavLink to={`/tasking/${task.id}`} className="item-link">
-              <div className="item-header">
-                <span className="item-title">{task.title}</span>
-              </div>
-              <div className="item-details">
-                {new Date(task.createdAt).toLocaleDateString()}
-              </div>
-            </NavLink>
-          </li>
-        ))}
-      </ul>
-      <NavLink to="/tasking" className="card-link">
-        <button className="card-button">View All Tasks</button>
-      </NavLink>
+      {content}
     </div>
   )
 }

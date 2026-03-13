@@ -29,11 +29,11 @@ describe('RecentPayments', () => {
     invoiceId = result.id
   })
 
-  it('displays empty state when no payments', async () => {
+  it('returns null when no payments', async () => {
     renderWithRouter(<RecentPayments />)
     
     await waitFor(() => {
-      expect(screen.getByText(/no payments recorded/i)).toBeDefined()
+      expect(screen.queryByText(/no payments/i)).toBeNull()
     })
   })
 
@@ -62,9 +62,7 @@ describe('RecentPayments', () => {
     
     renderWithRouter(<RecentPayments />)
     
-    await waitFor(() => {
-      expect(screen.getByText('INV-001')).toBeDefined()
-    })
+    expect(await screen.findByText(/INV-001/)).toBeDefined()
   })
 
   it('limits to 5 most recent payments', async () => {

@@ -4,7 +4,11 @@ import { getEquipmentNeedingMaintenance } from '../db'
 import type { Equipment } from '../db'
 import { useAsyncEffect } from '../hooks/useAsyncEffect'
 
-const DashboardEquipment = () => {
+interface DashboardEquipmentProps {
+  inline?: boolean
+}
+
+const DashboardEquipment = ({ inline = false }: DashboardEquipmentProps) => {
   const [equipment, setEquipment] = useState<Equipment[]>([])
 
   useAsyncEffect(
@@ -16,25 +20,12 @@ const DashboardEquipment = () => {
     { onResult: undefined }
   )
 
-  if (equipment.length === 0) {
-    return (
-      <div className="dashboard-section">
-        <h3 style={{ margin: 0 }}>Equipment</h3>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-          All equipment is up to date on maintenance.
-        </p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="dashboard-section">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-        <h3 style={{ margin: 0 }}>Equipment</h3>
-        <NavLink to="/equipment" style={{ fontSize: '0.875rem' }}>
-          View All
-        </NavLink>
-      </div>
+  const content = equipment.length === 0 ? (
+    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
+      ✓ All equipment is up to date on maintenance.
+    </p>
+  ) : (
+    <>
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
         {equipment.slice(0, 3).map(item => (
           <li
@@ -42,9 +33,9 @@ const DashboardEquipment = () => {
             style={{
               padding: '0.75rem',
               marginBottom: '0.5rem',
-              backgroundColor: 'var(--secondary-bg)',
+              backgroundColor: 'var(--input-bg)',
               borderRadius: '4px',
-              borderLeft: `4px solid #dc3545`,
+              borderLeft: '4px solid #dc3545',
             }}
           >
             <div style={{ fontWeight: 'bold', fontSize: '0.875rem' }}>{item.name}</div>
@@ -53,15 +44,39 @@ const DashboardEquipment = () => {
             </div>
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
               <NavLink to={`/equipment/${item.id}`}>
-                <button style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>View</button>
+                <button style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', marginTop: 0, width: 'auto' }}>View</button>
               </NavLink>
               <NavLink to={`/equipment/edit/${item.id}`}>
-                <button style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>Edit</button>
+                <button style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', marginTop: 0, width: 'auto' }}>Edit</button>
               </NavLink>
             </div>
           </li>
         ))}
       </ul>
+      <NavLink
+        to="/equipment"
+        style={{
+          display: 'block',
+          textAlign: 'center',
+          color: 'var(--accent-color)',
+          textDecoration: 'none',
+          fontSize: '0.875rem',
+          paddingTop: '0.5rem',
+        }}
+      >
+        View All →
+      </NavLink>
+    </>
+  )
+
+  if (inline) {
+    return <div>{content}</div>
+  }
+
+  return (
+    <div className="dashboard-section">
+      <h3 style={{ margin: 0 }}>Equipment</h3>
+      {content}
     </div>
   )
 }

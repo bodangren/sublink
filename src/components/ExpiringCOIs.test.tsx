@@ -31,7 +31,7 @@ describe('ExpiringCOIs', () => {
     renderWithRouter(<ExpiringCOIs />)
     
     await waitFor(() => {
-      expect(screen.getByText(/all certificates up to date/i)).toBeDefined()
+      expect(screen.getByText(/all certificates are up to date/i)).toBeDefined()
     })
   })
 

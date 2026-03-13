@@ -29,10 +29,24 @@ h1, h2, h3 {
   color: var(--accent-color);
 }
 
+.dashboard-section {
+  transition: border-color 0.2s ease;
+}
+
+.dashboard-section:hover {
+  border-color: #555555;
+}
+
 .container {
   max-width: 600px;
   margin: 0 auto;
   padding: 1rem;
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0.75rem;
+  }
 }
 
 button {

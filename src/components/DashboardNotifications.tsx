@@ -4,7 +4,11 @@ import { getUnreadNotifications } from '../db'
 import type { NotificationRecord } from '../db'
 import { useAsyncEffect } from '../hooks/useAsyncEffect'
 
-const DashboardNotifications = () => {
+interface DashboardNotificationsProps {
+  inline?: boolean
+}
+
+const DashboardNotifications = ({ inline = false }: DashboardNotificationsProps) => {
   const [notifications, setNotifications] = useState<NotificationRecord[]>([])
 
   useAsyncEffect(
@@ -26,25 +30,12 @@ const DashboardNotifications = () => {
     }
   }
 
-  if (notifications.length === 0) {
-    return (
-      <div className="dashboard-section">
-        <h3>Notifications</h3>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-          All caught up! No pending notifications.
-        </p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="dashboard-section">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-        <h3 style={{ margin: 0 }}>Notifications</h3>
-        <NavLink to="/notifications" style={{ fontSize: '0.875rem' }}>
-          View All
-        </NavLink>
-      </div>
+  const content = notifications.length === 0 ? (
+    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
+      ✓ All caught up! No pending notifications.
+    </p>
+  ) : (
+    <>
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
         {notifications.map(notification => (
           <li
@@ -52,7 +43,7 @@ const DashboardNotifications = () => {
             style={{
               padding: '0.75rem',
               marginBottom: '0.5rem',
-              backgroundColor: 'var(--secondary-bg)',
+              backgroundColor: 'var(--input-bg)',
               borderRadius: '4px',
               borderLeft: `4px solid ${getPriorityColor(notification.priority)}`,
             }}
@@ -64,6 +55,30 @@ const DashboardNotifications = () => {
           </li>
         ))}
       </ul>
+      <NavLink
+        to="/notifications"
+        style={{
+          display: 'block',
+          textAlign: 'center',
+          color: 'var(--accent-color)',
+          textDecoration: 'none',
+          fontSize: '0.875rem',
+          paddingTop: '0.5rem',
+        }}
+      >
+        View All →
+      </NavLink>
+    </>
+  )
+
+  if (inline) {
+    return <div>{content}</div>
+  }
+
+  return (
+    <div className="dashboard-section">
+      <h3>Notifications</h3>
+      {content}
     </div>
   )
 }

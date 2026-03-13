@@ -24,7 +24,11 @@ const getStatusLabel = (status: string): string => {
   return status.charAt(0).toUpperCase() + status.slice(1)
 }
 
-const RecentEstimates = () => {
+interface RecentEstimatesProps {
+  inline?: boolean
+}
+
+const RecentEstimates = ({ inline = false }: RecentEstimatesProps) => {
   const [estimates, setEstimates] = useState<Estimate[]>([])
 
   useEffect(() => {
@@ -39,31 +43,33 @@ const RecentEstimates = () => {
 
   if (estimates.length === 0) return null
 
-  return (
-    <div className="recent-section">
-      <h3>Recent Estimates</h3>
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        {estimates.map(estimate => (
-          <li key={estimate.id} style={{ 
-            marginBottom: '0.5rem', 
-            padding: '0.75rem', 
-            backgroundColor: 'var(--secondary-bg)', 
-            borderRadius: '4px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
+  const content = (
+    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+      {estimates.map(estimate => (
+        <li
+          key={estimate.id}
+          style={{
+            padding: '0.75rem 0',
+            borderBottom: '1px solid var(--border-color)',
+          }}
+        >
+          <NavLink
+            to={`/estimates/${estimate.id}`}
+            style={{ textDecoration: 'none', color: 'inherit', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+          >
             <div>
-              <div style={{ fontWeight: 'bold' }}>{estimate.estimateNumber}</div>
-              <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{estimate.clientName}</div>
+              <div style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>{estimate.estimateNumber}</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                {estimate.clientName}
+              </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{
                 backgroundColor: getStatusColor(estimate.status),
                 color: '#fff',
-                padding: '0.125rem 1.5rem',
+                padding: '0.125rem 0.5rem',
                 borderRadius: '4px',
-                fontSize: '0.75rem',
+                fontSize: '0.7rem',
                 fontWeight: 'bold',
                 textTransform: 'uppercase'
               }}>
@@ -73,9 +79,20 @@ const RecentEstimates = () => {
                 {formatCurrency(estimate.total)}
               </span>
             </div>
-          </li>
-        ))}
-      </ul>
+          </NavLink>
+        </li>
+      ))}
+    </ul>
+  )
+
+  if (inline) {
+    return <div>{content}</div>
+  }
+
+  return (
+    <div className="recent-section">
+      <h3>Recent Estimates</h3>
+      {content}
       <NavLink to="/estimates">
         <button style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>View All Estimates</button>
       </NavLink>

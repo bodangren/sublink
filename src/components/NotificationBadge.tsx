@@ -19,17 +19,15 @@ const NotificationBadge = () => {
   return (
     <NavLink
       to="/notifications"
-      style={({ isActive }) => ({
-        display: 'inline-flex',
+      className={({ isActive }) => `nav-item nav-notifications${isActive ? ' active' : ''}`}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         gap: '0.25rem',
-        padding: '0.5rem 0.75rem',
         textDecoration: 'none',
-        color: isActive ? 'var(--primary)' : 'var(--text-color)',
-        backgroundColor: isActive ? 'var(--secondary-bg)' : 'transparent',
-        borderRadius: '4px',
         position: 'relative',
-      })}
+      }}
     >
       <span style={{ fontSize: '1.25rem' }}>🔔</span>
       {unreadCount > 0 && (

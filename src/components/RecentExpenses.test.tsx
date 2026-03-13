@@ -19,7 +19,7 @@ describe('RecentExpenses', () => {
     renderWithRouter(<RecentExpenses />)
     
     await waitFor(() => {
-      expect(screen.getByText(/no expenses recorded/i)).toBeDefined()
+      expect(screen.getByText(/no expenses yet/i)).toBeDefined()
     })
   })
 
@@ -55,8 +55,6 @@ describe('RecentExpenses', () => {
     
     renderWithRouter(<RecentExpenses />)
     
-    await waitFor(() => {
-      expect(screen.getByText(/\$150.00/)).toBeDefined()
-    })
+    expect((await screen.findAllByText(/\$150.00/)).length).toBeGreaterThan(0)
   })
 })

@@ -9,7 +9,6 @@ import TaskDetail from './components/TaskDetail'
 import DailyLogForm from './components/DailyLogForm'
 import DailyLogList from './components/DailyLogList'
 import DailyLogDetail from './components/DailyLogDetail'
-import TodayLogStatus from './components/TodayLogStatus'
 import DashboardStats from './components/DashboardStats'
 import ExpiringCOIs from './components/ExpiringCOIs'
 import RecentTasks from './components/RecentTasks'
@@ -20,7 +19,6 @@ import ProjectForm from './components/ProjectForm'
 import ProjectDetail from './components/ProjectDetail'
 import TimeEntryList from './components/TimeEntryList'
 import TimeEntryForm from './components/TimeEntryForm'
-import TimeSummary from './components/TimeSummary'
 import ActiveTimer from './components/ActiveTimer'
 import InvoiceList from './components/InvoiceList'
 import InvoiceForm from './components/InvoiceForm'
@@ -54,55 +52,169 @@ import DashboardEquipment from './components/DashboardEquipment'
 import ChangeOrderList from './components/ChangeOrderList'
 import ChangeOrderForm from './components/ChangeOrderForm'
 import ChangeOrderDetail from './components/ChangeOrderDetail'
-import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLog, getProjects, getTimeEntry, getInvoice, getExpense, getEstimates, getAllMileage, getAllChangeOrders } from './db'
+import DashboardSection from './components/DashboardSection'
+import QuickActions from './components/QuickActions'
+import { getWaivers, getCOIs, deleteCOI, getTasks, getDailyLog, getProjects, getTimeEntry, getInvoice, getExpense, getEstimates, getAllMileage, getAllChangeOrders, getUnreadNotifications, getEquipmentNeedingMaintenance, getDailyLogByDate } from './db'
 import type { Waiver, Certificate, Task, DailyLog, Project, TimeEntry, Invoice, Expense, Estimate, MileageEntry, Client, ChangeOrder } from './db'
 import { getCOIStatus, getStatusColor, getStatusLabel } from './utils/coiStatus'
 import { generateAllNotifications } from './utils/notifications'
 import { useItemId, useTaskIdFromPath, useEditItem, formatCurrency } from './hooks/useEditWrapper'
 import { ConfirmProvider, useConfirm } from './hooks/useConfirm'
+import { useAsyncEffect } from './hooks/useAsyncEffect'
 
 const Home = () => {
+  const [alertCount, setAlertCount] = useState(0)
+  const [hasDailyLog, setHasDailyLog] = useState<boolean | null>(null)
+
+  useAsyncEffect(
+    async (isMounted) => {
+      const [notifications, equipment, cois, todayLog] = await Promise.all([
+        getUnreadNotifications(),
+        getEquipmentNeedingMaintenance(),
+        getCOIs(),
+        getDailyLogByDate(new Date().toISOString().split('T')[0]),
+      ])
+      
+      const expiringCOIs = cois.filter(coi => {
+        const status = getCOIStatus(coi.expirationDate)
+        return status === 'expiring' || status === 'expired'
+      })
+      
+      const total = notifications.length + equipment.length + expiringCOIs.length
+      if (isMounted()) {
+        setAlertCount(total)
+        setHasDailyLog(!!todayLog)
+      }
+    },
+    []
+  )
+
   return (
-    <div className="container">
-      <h1>SubLink</h1>
-      <p>Rugged utility for subcontractors.</p>
-      <ActiveTimer compact />
-      <DashboardStats />
-      <TimeSummary />
-      <TodayLogStatus />
-      <DashboardNotifications />
-      <DashboardEquipment />
-      <ExpiringCOIs />
-      <RecentTasks />
-      <RecentWaivers />
-      <RecentExpenses />
-      <RecentMileage />
-      <RecentEstimates />
-      <RecentPayments />
-      <RecentInvoices />
-      <div style={{ marginTop: '2rem' }}>
-        <NavLink to="/logs/new">
-          <button>New Daily Log</button>
-        </NavLink>
-        <NavLink to="/tasking/new">
-          <button style={{ marginTop: '0.5rem' }}>Quick Task + Photo</button>
-        </NavLink>
-        <NavLink to="/waivers/new">
-          <button style={{ marginTop: '0.5rem' }}>New Lien Waiver</button>
-        </NavLink>
-        <NavLink to="/expenses/new">
-          <button style={{ marginTop: '0.5rem' }}>New Expense</button>
-        </NavLink>
-        <NavLink to="/compliance/new">
-          <button style={{ marginTop: '0.5rem' }}>Add Certificate</button>
-        </NavLink>
-        <NavLink to="/mileage/new">
-          <button style={{ marginTop: '0.5rem' }}>Log Mileage</button>
-        </NavLink>
-        <NavLink to="/equipment/new">
-          <button style={{ marginTop: '0.5rem' }}>Add Equipment</button>
+    <div className="container" style={{ paddingBottom: '5rem' }}>
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        marginBottom: '1rem',
+        paddingTop: '0.5rem'
+      }}>
+        <div>
+          <h1 style={{ margin: 0, padding: 0, fontSize: '1.75rem' }}>SubLink</h1>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+          </p>
+        </div>
+        <NavLink 
+          to="/notifications" 
+          style={{ 
+            position: 'relative', 
+            textDecoration: 'none',
+            backgroundColor: 'var(--secondary-bg)',
+            padding: '0.5rem 0.75rem',
+            borderRadius: '8px',
+            border: '2px solid var(--border-color)',
+          }}
+        >
+          <span style={{ fontSize: '1.5rem' }}>🔔</span>
+          {alertCount > 0 && (
+            <span style={{
+              position: 'absolute',
+              top: '-8px',
+              right: '-8px',
+              backgroundColor: 'var(--error-color)',
+              color: '#fff',
+              fontSize: '0.75rem',
+              fontWeight: 'bold',
+              minWidth: '20px',
+              height: '20px',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              {alertCount > 9 ? '9+' : alertCount}
+            </span>
+          )}
         </NavLink>
       </div>
+
+      <ActiveTimer compact />
+      
+      <QuickActions />
+
+      {!hasDailyLog && hasDailyLog !== null && (
+        <div style={{
+          backgroundColor: 'rgba(255, 215, 0, 0.15)',
+          border: '2px solid var(--accent-color)',
+          borderRadius: '8px',
+          padding: '1rem',
+          marginBottom: '1rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '1rem',
+        }}>
+          <div>
+            <div style={{ fontWeight: 'bold', color: 'var(--accent-color)' }}>Daily Log Pending</div>
+            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Don't forget to log today's work</div>
+          </div>
+          <NavLink to="/logs/new">
+            <button style={{ marginTop: 0, padding: '0.5rem 1rem', whiteSpace: 'nowrap' }}>Create</button>
+          </NavLink>
+        </div>
+      )}
+
+      <DashboardStats />
+
+      <DashboardSection 
+        title="Alerts" 
+        icon="⚠️" 
+        badge={alertCount || undefined}
+        badgeColor="var(--error-color)"
+        collapsible 
+        defaultCollapsed={alertCount === 0}
+      >
+        <DashboardNotifications inline />
+        <div style={{ marginTop: '1rem' }}>
+          <DashboardEquipment inline />
+        </div>
+        <div style={{ marginTop: '1rem' }}>
+          <ExpiringCOIs inline />
+        </div>
+      </DashboardSection>
+
+      <DashboardSection 
+        title="Activity" 
+        icon="📋"
+        collapsible 
+        defaultCollapsed={false}
+      >
+        <RecentTasks inline />
+        <div style={{ marginTop: '1rem' }}>
+          <RecentMileage inline />
+        </div>
+        <div style={{ marginTop: '1rem' }}>
+          <RecentWaivers inline />
+        </div>
+      </DashboardSection>
+
+      <DashboardSection 
+        title="Financials" 
+        icon="💰"
+        collapsible 
+        defaultCollapsed={true}
+      >
+        <RecentExpenses inline />
+        <div style={{ marginTop: '1rem' }}>
+          <RecentInvoices inline />
+        </div>
+        <div style={{ marginTop: '1rem' }}>
+          <RecentPayments inline />
+        </div>
+        <div style={{ marginTop: '1rem' }}>
+          <RecentEstimates inline />
+        </div>
+      </DashboardSection>
     </div>
   )
 }
@@ -677,15 +789,16 @@ const AppShell = () => {
       <NavLink to="/equipment" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Equip</span>
       </NavLink>
+      <NavLink to="/mileage" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+        <span>Miles</span>
+      </NavLink>
       <NavLink to="/clients" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Clients</span>
       </NavLink>
       <NavLink to="/settings" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
         <span>Settings</span>
       </NavLink>
-      <NavLink to="/notifications" className={({ isActive }) => isActive ? 'nav-item nav-notifications active' : 'nav-item nav-notifications'}>
-        <NotificationBadge />
-      </NavLink>
+      <NotificationBadge />
     </nav>
   </div>
   )

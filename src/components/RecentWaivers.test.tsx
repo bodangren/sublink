@@ -23,7 +23,7 @@ describe('RecentWaivers', () => {
     renderWithRouter(<RecentWaivers />)
     
     await waitFor(() => {
-      expect(screen.getByText(/no waivers generated yet/i)).toBeDefined()
+      expect(screen.getByText(/no waivers yet/i)).toBeDefined()
     })
   })
 
@@ -83,7 +83,7 @@ describe('RecentWaivers', () => {
     renderWithRouter(<RecentWaivers />)
     
     await waitFor(() => {
-      expect(screen.getByText(/view all waivers/i)).toBeDefined()
+      expect(screen.getByText(/view all/i)).toBeDefined()
     })
   })
 })

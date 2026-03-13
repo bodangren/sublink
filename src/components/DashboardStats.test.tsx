@@ -69,7 +69,7 @@ describe('DashboardStats', () => {
     render(<DashboardStats />)
     
     await waitFor(() => {
-      const coiCard = screen.getByText('Certificates').parentElement
+      const coiCard = screen.getByText('Certs').parentElement
       expect(coiCard?.textContent).toContain('1')
     })
   })
@@ -80,7 +80,7 @@ describe('DashboardStats', () => {
     await waitFor(() => {
       expect(screen.getByText('Tasks')).toBeDefined()
       expect(screen.getByText('Waivers')).toBeDefined()
-      expect(screen.getByText('Certificates')).toBeDefined()
+      expect(screen.getByText('Certs')).toBeDefined()
     })
   })
 })

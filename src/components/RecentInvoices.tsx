@@ -11,7 +11,20 @@ const formatCurrency = (amount: number): string => {
   }).format(amount)
 }
 
-const RecentInvoices = () => {
+const getStatusColor = (status: string): string => {
+  switch (status) {
+    case 'paid': return '#28a745'
+    case 'pending': return '#ffc107'
+    case 'overdue': return '#dc3545'
+    default: return '#6c757d'
+  }
+}
+
+interface RecentInvoicesProps {
+  inline?: boolean
+}
+
+const RecentInvoices = ({ inline = false }: RecentInvoicesProps) => {
   const [invoices, setInvoices] = useState<Invoice[]>([])
 
   useAsyncEffect(
@@ -25,34 +38,27 @@ const RecentInvoices = () => {
     []
   )
 
-  const getStatusColor = (status: string): string => {
-    switch (status) {
-      case 'paid': return '#28a745'
-      case 'pending': return '#ffc107'
-      case 'overdue': return '#dc3545'
-      default: return '#6c757d'
-    }
-  }
-
   if (invoices.length === 0) return null
 
-  return (
-    <div className="recent-section">
-      <h3>Recent Invoices</h3>
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        {invoices.map(invoice => (
-          <li key={invoice.id} style={{ 
-            marginBottom: '0.5rem', 
-            padding: '0.75rem', 
-            backgroundColor: 'var(--secondary-bg)', 
-            borderRadius: '4px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
+  const content = (
+    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+      {invoices.map(invoice => (
+        <li
+          key={invoice.id}
+          style={{
+            padding: '0.75rem 0',
+            borderBottom: '1px solid var(--border-color)',
+          }}
+        >
+          <NavLink
+            to={`/invoices/${invoice.id}`}
+            style={{ textDecoration: 'none', color: 'inherit', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+          >
             <div>
-              <div style={{ fontWeight: 'bold' }}>{invoice.invoiceNumber}</div>
-              <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{invoice.clientName}</div>
+              <div style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>{invoice.invoiceNumber}</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                {invoice.clientName}
+              </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{
@@ -60,7 +66,7 @@ const RecentInvoices = () => {
                 color: '#fff',
                 padding: '0.125rem 0.5rem',
                 borderRadius: '4px',
-                fontSize: '0.75rem',
+                fontSize: '0.7rem',
                 fontWeight: 'bold',
                 textTransform: 'uppercase'
               }}>
@@ -70,9 +76,20 @@ const RecentInvoices = () => {
                 {formatCurrency(invoice.total)}
               </span>
             </div>
-          </li>
-        ))}
-      </ul>
+          </NavLink>
+        </li>
+      ))}
+    </ul>
+  )
+
+  if (inline) {
+    return <div>{content}</div>
+  }
+
+  return (
+    <div className="recent-section">
+      <h3>Recent Invoices</h3>
+      {content}
       <NavLink to="/invoices">
         <button style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>View All Invoices</button>
       </NavLink>
